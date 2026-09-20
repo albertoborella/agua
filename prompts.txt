@@ -1,0 +1,33 @@
+Tengo creada la estructura canónica de documentación SDD en la carpeta docs/. Leé docs/README.md y la carpeta docs/.ai/ para entender las reglas de trabajo del proyecto. A partir de las ideas que voy a ir escribiendote de a poco, quiero que empecemos a completar progresivamente los documentos siguiendo el paradigma SDD.
+
+En las empresas de alimentos hay muchos procesos que se deben realizar en forma rutinaria y varias veces al dia según el tamaño de la empresa.
+Uno de esos controles es el control de agua utilizada. Esos controles se hacen en agua de pozo y agua de grifo. Respecto a los controles especificamente son los siguientes:
+- Nivel de cloro, se mide una o mas veces al día a diferentes horas, es tomada el agua en los distintos grifos de la planta industrial. Cada planta industrial tiene distinta cantidad de grifos, los cuales deben estar identificados, y luego, el grifo de donde se toma el agua a controlar debe ser en forma aleatoria.
+- Análisis Fisico Quimico, para eso se realiza una toma de muestra un día determinado con una frecuencia establecida y se hace desde Grifo, Pozos o ambos.
+- Análisis Microbiológico, para eso se realiza una toma de muestra un día determinado con una frecuencia establecida y se hace desde Grifo, Pozos o ambos.
+Se debería tener una configuración para:
+- Cargar los distintos pozos de la planta elaboradora
+- Cargar los distintos grifos de la planta elaboradora
+- Cargar frecuencia de muestreos para análisis fisicoquímicos o microbiológicos para poder trabajar con avisos o alertas para muestrear en determinada fecha.
+Esas tomas de muestras son realizadas por distintos operarios de una empresa, que en este caso son empresas de produccion de alimentos.
+Mas adelante, sería interesante que al tomar las muestras, poder ver en una computadora de laboratorio las muestras tomadas y poder colocar los resultados analizados en el laboratorio, quedando registrado en la db del laboratorio. El celular es solo para enviar el momento de las tomas de muestras, y de donde se tomaron y el análisis a realizar.
+
+Las empresas de alimentos serán futuros clientes del software a quienes pretendo ofrecer para la venta. El control de cloro, si bien es un requisito reglamentario oficial, si en algún momento dejara de ser requisito oficial, puede enmarcarce dentro de las Buenas Prácticas. Sobre el uso del sistema armaría tres roles, Operario, Laboratorista y Administrador que configuraría los grifos, pozos, frecuencias, etc. Cada empresa tiene su propia instancia del sistema, me parece mejor para venderlo a distintas empresas, si estas de acuerdo. Creo que por el momento es importante enfocarnos solo en el registro de tomas de muestras y registrarlas al momento de tomarlas a traves del celular, y dejar el modulo laboratorio para despues, aunque es importante tener en cuenta que luego lo harmaremos también.
+
+sobre el stack tecnológico usaría Flutter, backend con Python y DB SQlite3 si te parece bien.
+
+En cuanto a los requerimientos del sistema, el mismo debe permitir que la primera vez como para registrar un administrador, se haga a travez de un script al estilo que se registra un superadmin en Djago. Luego ese administrador dara el usuario y contraseña a cada empleado segun su rol. Esos empleados podran ingresar al sistema y a travez de un link podran cambiar su contraseña. En cuanto al operario, este va a tomar las muestras de agua de grifos o pozos que estarán identificados y eso quedará registrado en la db conjuntamente con el operario logueado, quien es el que tomó la muestra. Tambien deberá colocar el objetivo que podria ser Nivel de Cloro, Análisis Fisico Quimico (FQ) o Análisis Microbiológico (MB) u otro, que en este caso se debería detallar. Por supuesto tambien debe quedar registrada la fecha y hora de la toma de mestra porque en el caso de cloro es posible que se tomen mas de una vez al día, de ahí la importacia de la hora.
+
+Podemos seguir por los modelos
+
+Sigamos con la architecture, para lo cual no se si necesitas lo siguiente pero quiero construir el backend con Python FastAPI, SQLModel. La db SQLite3 . El frontend con Flutter. Necesitas algo mas para los docs de architecture?
+
+Dale, sigamos con use-cases y si es posible y nesecitas algo en especial quisiera que me lo preguntes para contestarte correctamente lo que necesites.
+
+1. La eleccion del grifo donde se toma el agua para analizar nivel de cloro debe ser aleatoria por el sistema aunque se podría dar el caso que igualmente se pueda cambiar el grifo manualmente si por alguna causa no se puede obtener del de la eleccion aleatoria.
+2. En lugar de colocar analisis "Otros", deberá haber solo un campo select que despliegue una lista que previamente el administrador ha configurado MB, FQ, Cloro, etc.
+3. El operario ve solo las alertas de su planta.
+
+Todas la funcionalidades deben tener su testing y quisiera seguir la docs por aquí.
+
+Para finalizar con las docs te pediría que me preguntes lo que necesites para finalizar la docs.

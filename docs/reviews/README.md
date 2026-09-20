@@ -1,17 +1,22 @@
-# Reviews
+# Revisiones
 
-Revisiones y auditorías realizadas sobre el proyecto: hallazgos, decisiones
+Revisiones y auditorias realizadas sobre el proyecto: hallazgos, decisiones
 tomadas y seguimiento.
 
 ---
-## Documentos esperados
 
-| Archivo | Qué contiene |
-| ------- | ------------ |
-| `<fecha>-<tema>.md` | Revisión o auditoría con hallazgos y acciones. |
+## Documentos
+
+| Archivo | Contenido |
+| ------- | --------- |
+| `<fecha>-<tema>.md` | Revision o auditoria con hallazgos y acciones. |
+
+## Estado
+
+No hay revisiones registradas aun. Esta seccion se populate cuando se
+realicen revisiones de codigo, seguridad o arquitectura.
 
 ## Consejos
 
-- Una revisión sin fecha y sin acciones no sirve: registrá ambas.
-- El seguimiento de hallazgos se hace acá o en `docs/planning/`.
-
+- Una revision sin fecha y sin acciones no sirve: registra ambas.
+- El seguimiento de hallazgos se hace aca o en `docs/planning/`.

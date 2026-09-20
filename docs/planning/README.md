@@ -1,20 +1,25 @@
 # Planning
 
-Define la evolución del proyecto: roadmap, hitos, preguntas abiertas y
+Define la evolucion del proyecto: roadmap, hitos, preguntas abiertas y
 registro de cambios.
 
 ---
-## Documentos esperados
 
-| Archivo | Qué contiene |
-| ------- | ------------ |
-| `00-roadmap.md` | Evolución planificada del proyecto. |
-| `01-milestones.md` | Hitos principales con objetivos verificables. |
-| `02-open-questions.md` | Preguntas sin resolver y decisiones pendientes. |
-| `03-changelog.md` | Historial de cambios por versión. |
+## Documentos
+
+| Archivo | Contenido |
+| ------- | --------- |
+| `00-roadmap.md` | Fases del proyecto: MVP, Lab Module, Escalabilidad. |
+| `01-milestones.md` | Criterios de aceptacion para cada hito del MVP. |
+| `02-open-questions.md` | Preguntas pendientes y decisiones ya resueltas. |
+
+## Orden de lectura
+
+1. `00-roadmap.md` — vision general de las fases.
+2. `01-milestones.md` — que implica completar cada hito.
+3. `02-open-questions.md` — que falta por decidir.
 
 ## Consejos
 
-- El roadmap es una hipótesis: se revisa en cada milestone.
-- Las preguntas abiertas bloquean diseño: resolvelas temprano.
-
+- El roadmap es una hipotesis: se revisa en cada milestone.
+- Las preguntas abiertas bloquean diseno: resolvelas temprano.

@@ -137,3 +137,36 @@ Todos los endpoints de listado soportan:
 | `/samples/history` | `fuente_id`, `tipo_analisis_id`, `fecha_desde`, `fecha_hasta`, `operario_id` |
 | `/admin/users` | `rol`, `activo` |
 | `/alerts/pending` | `tipo` |
+
+## Notas de implementacion (2026-09-26)
+
+- `GET /catalog/analysis-types` esta implementado en `app/routers/catalog.py` y
+  abierto a **cualquier usuario autenticado**, como indica la tabla de arriba. El
+  catalogo vive en la base global y no tiene `tenant_id`, asi que leerlo no
+  expone datos de ninguna empresa. Antes solo existia
+  `GET /admin/analysis-types` con `require_role(["ADMIN"])`, lo que hacia
+  imposible que un Operario pudiera elegir un tipo de analisis en M1.6. Ese
+  endpoint de lectura se elimino para evitar dos caminos al mismo dato; las
+  escrituras (`POST`/`PUT`/`DELETE`) siguen siendo solo ADMIN.
+- La discriminacion de cloro es `AnalysisType.codigo == "CLORO"`. El modelo no
+  tiene un booleano.
+- `POST /samples` responde **200**, no 201 como dice el ejemplo de mas arriba.
+- `SampleRecord` no tiene `descripcion_otro` aunque el ejemplo del request lo
+  incluye, y `AnalysisType.requiere_descripcion` queda sin uso por eso.
+- No hay paginacion en `GET /samples/history`.
+- Ningun endpoint crea alertas: `AlertService` solo expone `get_pending` y
+  `mark_read`. Las alertas se insertan a mano en `scripts/seed_demo.py`.
+- La sesion guardada se resuelve en `main()`, antes de `runApp`, y la app se
+  construye con un unico `MaterialApp`. La razon: `initialRoute` solo se lee
+  cuando se crea el Navigator, asi que montar la app primero fijaba la ruta
+  inicial a `/login` y descartaba una sesion valida en cada recarga de pagina.
+  `main()` espera a `auth.init()` y recien ahi llama a `runApp`; por eso
+  `AguaApp.build()` no necesita resolver nada. Cubierto por
+  `mobile/test/app_boot_test.dart`.
+- No hay un `GET /users` disponible para no-admins. `GET /admin/users` exige
+  rol ADMIN, y `GET /samples/history` solo devuelve `operario_id`. Resolver el
+  nombre de un operario que no es el usuariologueado requiere una lista de
+  usuarios que el API no expone a un OPERARIO, asi que en el historial ese
+  nombre no se puede resolver: `_operarioName()` muestra el username cuando el
+  id coincide con el usuario de la sesion y cae a `Operario <8 chars del id>`
+  para el resto.

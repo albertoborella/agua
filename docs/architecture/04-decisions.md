@@ -15,6 +15,8 @@ Registro de las decisiones de arquitectura tomadas en el proyecto.
 | ADR-005 | 2026-09-20 | Autenticacion: JWT (access + refresh) | Aprobada |
 | ADR-006 | 2026-09-20 | Offline-first: SQLite local + sync | Aprobada |
 | ADR-007 | 2026-09-20 | Primer admin por script (createsuperadmin) | Aprobada |
+| ADR-008 | 2026-09-21 | Contenedores: Podman + AWS ECR Public | Aprobada |
+| ADR-009 | 2026-09-21 | Flutter Web: desarrollo con hot reload en navegador | Aprobada |
 
 ---
 
@@ -88,3 +90,65 @@ red.
 - (-) Hay que manejar conflictos de sincronizacion (el mismo registro
   local puede haber sido creado offline).
 - (-) Duplica la capa de persistencia (SQLite local + SQLite remoto).
+
+---
+
+## ADR-008: Contenedores Podman + AWS ECR Public
+
+**Contexto**: Se necesita empaquetar el backend en contenedores para
+desarrollo local y despliegue consistente.
+
+**Decision**: Podman como runtime de contenedores, imagenes base desde
+AWS ECR Public (`public.ecr.aws/docker/library/`).
+
+**Alternativas descartadas**:
+- Docker: requiere daemon centralizado, tiene rate limits en Docker Hub,
+  politicas empresariales que restringen su uso.
+- Docker Hub como registry: rate limits de descarga, autenticacion
+  requerida para volumen alto.
+- Buildah/Slim manual: mas complejo, sin soporte de compose nativo.
+
+**Consecuencias**:
+- (+) Sin daemon (rootless por defecto), mejor seguridad.
+- (+) Sin rate limits ni autenticacion para imagenes publicas de AWS.
+- (+) Compatibilidad sintactica con Dockerfiles existentes.
+- (+) `podman-compose` proporciona orquestacion similar a docker-compose.
+- (-) Algunas herramientas de ecosistema Docker no son compatibles.
+- (-) Curva de aprendizaje minima para equipos acostumbrados a Docker.
+
+---
+
+## ADR-009: Flutter Web — Desarrollo con Hot Reload en Navegador
+
+**Contexto**: El equipo quiere ver los cambios de UI en un navegador mientras
+desarrollan, sin compilar para movil cada vez. Flutter soporta web nativamente
+desde Flutter 2.
+
+**Decision**: Habilitar Flutter Web para desarrollo local con hot reload,
+usando un container Podman con el SDK de Flutter y `flutter run -d web-server`.
+
+**Alternativas descartadas**:
+- Instalar Flutter localmente: inconsistencia entre desarrolladores, sin
+  reproducibilidad del entorno.
+- Solo compilar para movil: ciclo de desarrollo lento, no se puede iterar
+  rapido en UI.
+- React Native Web: requiere migrar toda la codebase, perder offline-first.
+
+**Implementacion**:
+- `mobile/Containerfile`: imagen basada en `ubuntu:24.04` (ECR Public) con
+  Flutter SDK pre-instalado.
+- `podman-compose.yml`: servicio `flutter-web` que monta el codigo fuente
+  via volume para hot reload.
+- `lib/core/config/env_config.dart`: detecta `kIsWeb` y usa `localhost:8000`
+  en vez de `10.0.2.2:8000` (Android emulator).
+- Puerto 8080 expuesto para acceso desde el navegador del host.
+
+**Consecuencias**:
+- (+) Hot reload en navegador: cambios instantaneos sin recompilar.
+- (+) Misma codebase para movil y web (sin dependencias nativas).
+- (+) Entorno reproducible via Podman (mismo SDK en todos los equipos).
+- (+) No afecta el build de movil (Android/iOS siguen igual).
+- (-) Algunos plugins de Flutter no soportan web (verificar compatibilidad).
+- (-) El container de Flutter pesa ~2GB (SDK + cache).
+- (-) Hot reload via volume mount puede tener latencia en OS con filesystem
+  lento (resoluble con `PUB_CACHE` en volumen separado).

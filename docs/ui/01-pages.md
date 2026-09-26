@@ -45,6 +45,10 @@
 **Tablet**: las 4 tarjetas de resumen se muestran en grid 2x2. Los botones
 de accion se apilan a la izquierda con ancho maximo de 400dp.
 
+**AppBar**: boton de ayuda (`help_outline`, tooltip "Instructivo") que abre la
+pagina 9, antes del de configuracion y el de persona. Ojo: el boton de persona
+y el de "Usuarios" apuntan a rutas que todavia no estan registradas y no abren.
+
 ---
 
 ## 3. Nueva Muestra
@@ -158,3 +162,44 @@ detalle de la muestra seleccionada a la derecha.
   - Rol (badge).
   - Estado (activo/inactivo).
 - Tap en un usuario: opciones editar, desactivar, restablecer contrasena.
+
+---
+
+## 9. Ayuda - Instructivo
+
+**Objetivo**: manual de uso dentro de la app. Lleva a un usuario nuevo desde
+cero hasta registrar su primera muestra.
+
+**Acceso**: boton de ayuda (`help_outline`) en el AppBar del Home, antes del
+de configuracion y el de persona. Ruta `/help`.
+
+**Elementos**:
+- Card "Atajo" arriba de todo, con los tres datos para entrar:
+  - App: `http://localhost:8080` (el 5173 es otro proyecto).
+  - ID de Empresa: `demo`.
+  - Admin: `admin` / `Admin123!`.
+- Secciones numeradas, cada una con titulo, bajada opcional y cuerpo:
+  1. Levantar el sistema.
+  2. Configurar el ID de Empresa.
+  3. Entrar con un usuario.
+  4. Usuarios de prueba (bloque de credenciales por rol).
+  5. Registrar la primera muestra (pasos numerados).
+  6. La regla del cloro.
+  7. Consultar el historial.
+  8. Revisar las alertas.
+  9. Volver a los datos de prueba (bloque de comando monoespaciado).
+- Seccion final "Limitaciones conocidas", en un recuadro ambar con icono de
+  advertencia, para que no se lea como una lista de features.
+
+**Reglas de contenido**: solo documenta comportamiento existente. El manual
+incluye los limites conocidos a proposito —nada genera alertas solo, no hay
+refresh de token, el historial no pagina, no hay logout, las rutas de
+"Usuarios" y de cuenta no estan registradas, y las tarjetas del Home muestran
+0 fijo— en vez de omitirlos.
+
+**Estados**:
+- Unico estado: es contenido estatico, no carga datos ni tiene estados de
+  error ni de vacio.
+
+**Tablet**: una sola columna, mismo contenido. El texto largo se copia de las
+tarjetas de credenciales, del comando y de los bullets, no de la prosa.

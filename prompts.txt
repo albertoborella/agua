@@ -31,3 +31,38 @@ Dale, sigamos con use-cases y si es posible y nesecitas algo en especial quisier
 Todas la funcionalidades deben tener su testing y quisiera seguir la docs por aquí.
 
 Para finalizar con las docs te pediría que me preguntes lo que necesites para finalizar la docs.
+
+En cuanto a Colores y marca me gustaría que me sugieras la paleta de colores que consideres teniendo en cuenta que las muestras de agua se toman a veces en el exterior, al aire libre y con sol por lo que deberian se colores que admitan una visual en condiciones no optimas. Lo mismo vale para la opcion Dark. La navegacion principal la inmagino con botones que ocupan el ancho del celular y un botón debajo del otro.
+El repositorio donde vamos a alojar todo el proyecto en github es git@github.com:albertoborella/agua.git
+En cuanto a los commits, los mensajes seran conventional commits, etc. 
+
+Si bien vamos a comenzar a trabajar con ui para celular pero deberíamos tambien adaptar la UI a una tablet tambien.
+
+Ok, comencemos con el codigo, te parece que comencemos con el backend?
+
+Me parece bien que hagamos un commit de toda la documentación.
+
+Antes de seguir adelante quiero decirte, a menos que haya un problema de compatibilidad en cuanto a correr la app en movile (celular/tablet), que el proyecto correrá bajo contenedores de Podman - vamos a usar imagenes públicas de AWS (evitar imagenes de Docker)
+
+Si estás de acuerdo comencemos con Flutter.
+
+Hola, dado que para correr el proyecto no lo puedo hacer como normalmente corremos contenedores de podman, como ser podman-compose up --build quiero que veas bien en la documentacion el stack tecnológico que es FastAPI, SQLModel, SQLite3 y Flutter y que deben correr en contenedores de podman y vamos a usar imágenes publicas de AWS (evitar imagenes de Docker). Una vez que hagas los cambios que necesites quieros que lo documentes donde corresponde.
+
+Levanta el contenedor podman pero me da un not found 404 en localhost:8000 para ver la api, y tampoco puedo ver el frontend en localhost:3000 o 3001
+
+Mirá, estuve investigando sobre Flutter y veo que ademas de app para movil podemos hacer como para que se vea tambien en web. Sería factible modificarla documentacion y lo realizado hasta ahora como para poder ir viendo tambien lo que vamos desarrollando, en la web, antes de pasar a compilar y crear el archivo para moviles?? Se entiende lo que pretendo?? Es posible??
+
+Tengo el siguiente error en este procesos
+aborella@aborella-Aspire-E5-575:~/agua$ podman exec -it agua-flutter-web flutter pub get
+Error: no container with name or ID "agua-flutter-web" found: no such container
+
+Perfecto, todo parece andar bien, cuando accedo al localhost:8080 veo un formulario de login con los inputs ID Empresa, Usuario y Contraseña. Lo que no entiendo es el porque el ID de empresa, seguramente es por si una empresa tiene distintas plantas. Sería correcto aunque habíamos definido en una para cada planta.
+
+Deberiamos tener en el menú que idicamos que seran botones uno debajo de otro, uno que sea configuraciones, y entonces en esas configuraciones, una debería ser ID de Empresa.
+
+Hola, continuemos con el proyecto. Aunque no se habre el proyecto. Estoy corriendo los contenedores, voy a localhost:5173 pero no se abre el proyecto. La última vez veíamos el formulario de login.
+
+Perfecto, hace unos dias que no estoy en este proyecto. Por donde me aconsejas seguir teniemdo en cuenta la docs?
+
+Mirá, despues de todo el trabajo reciente, cerré los contenedores, volví a correrlos pero no me muestra nada la pantalla, cuando anteriormente me mostraba un login
+

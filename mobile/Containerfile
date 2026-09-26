@@ -1,0 +1,49 @@
+# Agua Flutter Web - Containerfile (Podman compatible)
+# Development container for Flutter web with hot reload.
+# Uses AWS ECR Public images instead of Docker Hub.
+#
+# Usage:
+#   podman-compose up flutter-web
+#   Open http://localhost:8080 in your browser
+
+# ─── Base stage ───────────────────────────────────────────────────────
+FROM public.ecr.aws/docker/library/ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV FLUTTER_HOME=/opt/flutter
+ENV PATH="$FLUTTER_HOME/bin:$PATH"
+ENV PUB_CACHE=/root/.pub-cache
+# Prevent tar ownership errors when running as root in container
+ENV TAR_OPTIONS="--no-same-owner"
+
+# System dependencies for Flutter web development
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    git \
+    unzip \
+    xz-utils \
+    zip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Flutter SDK (stable channel)
+RUN git clone --depth 1 --branch stable \
+    https://github.com/flutter/flutter.git "$FLUTTER_HOME"
+
+# Initialize Flutter — download Dart SDK only, skip Android/Gradle
+RUN flutter --version
+
+# Bake the web artifacts into the image (Material fonts, CanvasKit, web SDK).
+# Without this, the first `flutter run` downloads them at container start and
+# fails whenever the container has no working DNS, leaving the server dead.
+RUN flutter precache --web
+
+WORKDIR /app
+
+EXPOSE 8080
+
+# Flutter web dev server — watches for file changes via volume mount.
+# Access at http://localhost:8080 in your browser.
+CMD ["flutter", "run", "-d", "web-server", \
+     "--web-port=8080", \
+     "--web-hostname=0.0.0.0"]

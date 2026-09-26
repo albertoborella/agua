@@ -15,6 +15,15 @@ class HomeScreen extends StatelessWidget {
         title: const Text('Agua'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.help_outline),
+            tooltip: 'Instructivo',
+            onPressed: () => Navigator.pushNamed(context, '/help'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () => Navigator.pushNamed(context, '/settings'),
+          ),
+          IconButton(
             icon: const Icon(Icons.person),
             onPressed: () => Navigator.pushNamed(context, '/account'),
           ),
@@ -93,7 +102,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
-                  onPressed: () => Navigator.pushNamed(context, '/admin/config'),
+                  onPressed: () => Navigator.pushNamed(context, '/settings'),
                   icon: const Icon(Icons.settings),
                   label: const Text('Configuración'),
                 ),

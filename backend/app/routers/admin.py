@@ -154,16 +154,9 @@ def create_analysis_type(
         return AnalysisTypeResponse(**atype.model_dump())
 
 
-@router.get("/analysis-types", response_model=list[AnalysisTypeResponse])
-def list_analysis_types(
-    payload: dict = Depends(require_role(["ADMIN"])),
-):
-    from app.database import get_global_engine
-    engine = get_global_engine()
-    with Session(engine) as session:
-        svc = AnalysisTypeService(session)
-        types = svc.list_all()
-        return [AnalysisTypeResponse(**t.model_dump()) for t in types]
+# NOTE: reading the catalog lives in catalog.py as GET /catalog/analysis-types
+# (any authenticated user). Keeping a second ADMIN-only read here would let the
+# two paths drift. Writes below stay ADMIN-only.
 
 
 @router.put("/analysis-types/{type_id}", response_model=AnalysisTypeResponse)

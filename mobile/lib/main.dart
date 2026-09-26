@@ -1,14 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'core/config/env_config.dart';
 import 'core/theme/app_theme.dart';
+import 'features/alerts/screens/alerts_screen.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/screens/login_screen.dart';
+import 'features/help/screens/help_screen.dart';
 import 'features/home/screens/home_screen.dart';
+import 'features/samples/screens/history_screen.dart';
+import 'features/samples/screens/new_sample_screen.dart';
+import 'features/settings/screens/settings_screen.dart';
 import 'shared/services/api_service.dart';
 
-void main() {
-  runApp(const AguaApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final api = ApiService(baseUrl: EnvConfig.baseUrl);
+  final auth = AuthProvider(api: api);
+
+  // Rehydrate the stored session BEFORE the first frame. `initialRoute` is
+  // only read when the Navigator is created, so the session has to be resolved
+  // first -- building the app first would pin it to '/login' and drop a valid
+  // session on every page reload.
+  await auth.init();
+
+  // `.value` because the provider already exists: creating it here would build
+  // a second AuthProvider with an empty session.
+  runApp(
+    ChangeNotifierProvider<AuthProvider>.value(
+      value: auth,
+      child: const AguaApp(),
+    ),
+  );
 }
 
 class AguaApp extends StatelessWidget {
@@ -16,27 +40,27 @@ class AguaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final api = ApiService(baseUrl: 'http://10.0.2.2:8000');
+    // `main()` guarantees the session is already resolved at this point.
+    final isAuthenticated =
+        context.select<AuthProvider, bool>((auth) => auth.isAuthenticated);
 
-    return ChangeNotifierProvider(
-      create: (_) => AuthProvider(api: api)..init(),
-      child: Consumer<AuthProvider>(
-        builder: (context, auth, _) {
-          return MaterialApp(
-            title: 'Agua',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.light,
-            darkTheme: AppTheme.dark,
-            themeMode: ThemeMode.system,
-            initialRoute: auth.isAuthenticated ? '/home' : '/login',
-            routes: {
-              '/login': (context) => const LoginScreen(),
-              '/home': (context) => const HomeScreen(),
-              // TODO: add remaining routes
-            },
-          );
-        },
-      ),
+    return MaterialApp(
+      title: 'Agua',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.system,
+      initialRoute: isAuthenticated ? '/home' : '/login',
+      routes: {
+        '/login': (context) => const LoginScreen(),
+        '/home': (context) => const HomeScreen(),
+        '/settings': (context) => const SettingsScreen(),
+        '/new-sample': (context) => const NewSampleScreen(),
+        '/history': (context) => const HistoryScreen(),
+        '/alerts': (context) => const AlertsScreen(),
+        '/help': (context) => const HelpScreen(),
+        // TODO: add remaining routes
+      },
     );
   }
 }

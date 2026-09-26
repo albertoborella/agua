@@ -139,7 +139,7 @@ Diccionario de términos técnicos y conceptuales utilizados en el desarrollo de
 | **JWT** | *JSON Web Token.* Estándar de autenticación compacto y autosuficiente que transporta información del usuario encriptada o firmada digitalmente entre el cliente y el servidor. |
 | **Svelte / SvelteKit** | *Svelte* es un compilador web que transforma el código en JavaScript imperativo ultra-optimizado durante la fase de *build*, sin utilizar un Virtual DOM. *SvelteKit* es su framework oficial para aplicaciones SSR/CSR. |
 | **FastAPI** | Framework de Python de alto rendimiento diseñado para construir APIs REST asíncronas, con tipado estricto y generación automática de documentación interactiva (OpenAPI/Swagger). |
-| **Contenedor / Podman / Docker** | Tecnología de virtualización a nivel de sistema operativo que empaqueta una aplicación y todo su entorno de ejecución dentro de una unidad aislada e independiente de la máquina anfitriona. |
+| **Contenedor / Podman** | Tecnologia de virtualizacion a nivel de sistema operativo que empaqueta una aplicacion y todo su entorno de ejecucion dentro de una unidad aislada e independiente de la maquina hospedera. Podman es el runtime utilizado en este proyecto (sin daemon, compatible con Docker). Las imagenes base se obtienen de AWS ECR Public. |
 
 ---
 

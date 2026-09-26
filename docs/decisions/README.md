@@ -18,6 +18,8 @@ Los ADRs del proyecto estan documentados en `docs/architecture/04-decisions.md`.
 | ADR-005 | 2026-09-20 | Autenticacion: JWT (access + refresh) |
 | ADR-006 | 2026-09-20 | Offline-first: SQLite local + sync |
 | ADR-007 | 2026-09-20 | Primer admin por script (createsuperadmin) |
+| ADR-008 | 2026-09-21 | Contenedores: Podman + AWS ECR Public |
+| ADR-009 | 2026-09-21 | Flutter Web: desarrollo con hot reload en navegador |
 
 ## Formato ADR
 

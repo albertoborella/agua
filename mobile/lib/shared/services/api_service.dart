@@ -45,8 +45,13 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      setTokens(data['access_token'], data['refresh_token'], tenantId);
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      final accessToken = data['access_token'] as String?;
+      final refreshToken = data['refresh_token'] as String?;
+      if (accessToken == null || refreshToken == null) {
+        throw Exception('La respuesta del login no incluye los tokens');
+      }
+      setTokens(accessToken, refreshToken, tenantId);
       return data;
     } else {
       throw Exception('Credenciales inválidas');
@@ -54,15 +59,26 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> refreshToken() async {
+    final tenantId = _tenantId;
+    final currentRefreshToken = _refreshToken;
+    if (tenantId == null || currentRefreshToken == null) {
+      throw Exception('No hay sesión activa para renovar el token');
+    }
+
     final response = await http.post(
       Uri.parse('$baseUrl/auth/refresh'),
       headers: {'Content-Type': 'application/json'},
-      body: json.encode({'refresh_token': _refreshToken}),
+      body: json.encode({'refresh_token': currentRefreshToken}),
     );
 
     if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      setTokens(data['access_token'], data['refresh_token'], _tenantId!);
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      final accessToken = data['access_token'] as String?;
+      final newRefreshToken = data['refresh_token'] as String?;
+      if (accessToken == null || newRefreshToken == null) {
+        throw Exception('La respuesta del refresh no incluye los tokens');
+      }
+      setTokens(accessToken, newRefreshToken, tenantId);
       return data;
     } else {
       throw Exception('Token inválido');
@@ -128,11 +144,17 @@ class ApiService {
     }
   }
 
-  Future<WaterSource> createSource(String nombre, String tipo) async {
+  Future<WaterSource> createSource(String plantaId, String nombre, String tipo,
+      {String? ubicacion}) async {
     final response = await http.post(
       Uri.parse('$baseUrl/admin/sources'),
       headers: _headers,
-      body: json.encode({'nombre': nombre, 'tipo': tipo}),
+      body: json.encode({
+        'planta_id': plantaId,
+        'nombre': nombre,
+        'tipo': tipo,
+        'ubicacion': ubicacion,
+      }),
     );
 
     if (response.statusCode == 200) {
@@ -142,10 +164,12 @@ class ApiService {
     }
   }
 
-  // Admin - Analysis Types
+  // Catalog - analysis types
+  // Reads the global catalog, which is open to any authenticated user (an
+  // operario must be able to pick an analysis type). Writes stay ADMIN-only.
   Future<List<AnalysisType>> getAnalysisTypes() async {
     final response = await http.get(
-      Uri.parse('$baseUrl/admin/analysis-types'),
+      Uri.parse('$baseUrl/catalog/analysis-types'),
       headers: _headers,
     );
 
@@ -157,11 +181,16 @@ class ApiService {
     }
   }
 
-  Future<AnalysisType> createAnalysisType(String nombre, String? descripcion) async {
+  Future<AnalysisType> createAnalysisType(String codigo, String nombre,
+      {bool requiereDescripcion = false}) async {
     final response = await http.post(
       Uri.parse('$baseUrl/admin/analysis-types'),
       headers: _headers,
-      body: json.encode({'nombre': nombre, 'descripcion': descripcion}),
+      body: json.encode({
+        'codigo': codigo,
+        'nombre': nombre,
+        'requiere_descripcion': requiereDescripcion,
+      }),
     );
 
     if (response.statusCode == 200) {

@@ -11,14 +11,12 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _tenantController = TextEditingController();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _tenantController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -31,7 +29,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final success = await auth.login(
       _usernameController.text.trim(),
       _passwordController.text,
-      _tenantController.text.trim(),
     );
 
     if (success && mounted) {
@@ -42,6 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final hasTenant = auth.tenantId != null && auth.tenantId!.isNotEmpty;
 
     return Scaffold(
       body: Center(
@@ -80,25 +78,46 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 48),
 
-                  // Tenant ID
-                  TextFormField(
-                    controller: _tenantController,
-                    decoration: const InputDecoration(
-                      labelText: 'ID de Empresa',
-                      prefixIcon: Icon(Icons.business),
+                  // Tenant warning
+                  if (!hasTenant) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.tertiaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: Theme.of(context).colorScheme.tertiary,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Primero configurá el ID de empresa',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.tertiary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Ingresá el ID de tu empresa';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: () =>
+                          Navigator.pushNamed(context, '/settings'),
+                      icon: const Icon(Icons.settings),
+                      label: const Text('Ir a Configuración'),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
 
                   // Username
                   TextFormField(
                     controller: _usernameController,
+                    enabled: hasTenant,
                     decoration: const InputDecoration(
                       labelText: 'Usuario',
                       prefixIcon: Icon(Icons.person),
@@ -116,6 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   // Password
                   TextFormField(
                     controller: _passwordController,
+                    enabled: hasTenant,
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
                       labelText: 'Contraseña',
@@ -164,7 +184,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   // Login button
                   ElevatedButton(
-                    onPressed: auth.isLoading ? null : _login,
+                    onPressed: auth.isLoading || !hasTenant ? null : _login,
                     child: auth.isLoading
                         ? const SizedBox(
                             height: 20,

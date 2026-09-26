@@ -12,7 +12,7 @@ comunicacion entre servicios, seguridad y despliegue.
 | `00-architecture.md` | Arquitectura general: stack, patrones, estructura del proyecto. |
 | `01-api-design.md` | Diseno de la API REST: endpoints, esquemas, paginacion. |
 | `02-security.md` | Modelo de seguridad: JWT, autorizacion, proteccion de datos. |
-| `03-deployment.md` | Estrategia de despliegue: entornos, Docker, nginx, backup. |
+| `03-deployment.md` | Estrategia de despliegue: entornos, Podman, nginx, backup. |
 | `04-decisions.md` | Indice de decisiones tecnicas (ADR). |
 
 ## Orden de lectura

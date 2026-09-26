@@ -5,7 +5,8 @@
 | Entorno | Proposito | Backend | DB |
 | ------- | --------- | ------- | -- |
 | **Local** | Desarrollo individual | `uvicorn` en localhost:8000 | SQLite3 archivo local |
-| **Staging** | Pruebas e integracion | `uvicorn` o gunicorn | SQLite3 por tenant |
+| **Local (contenedor)** | Desarrollo con Podman | Podman via `podman-compose` | SQLite3 por tenant (volumen) |
+| **Staging** | Pruebas e integracion | gunicorn | SQLite3 por tenant |
 | **Produccion** | Clientes reales | gunicorn + nginx | SQLite3 por tenant (archivo) |
 
 ## 2. Backend
@@ -31,29 +32,180 @@ gunicorn app.main:app \
 | `CORS_ORIGINS` | Origenes permitidos (para debug). | `["http://localhost:3000"]` |
 | `ENVIRONMENT` | Entorno activo. | `development` |
 
-### Dockerfile (Backend)
+## 3. Contenedores (Podman)
+
+Se usa **Podman** como runtime de contenedores (sin daemon, compatible con
+Docker). Las imagenes base se obtienen de **AWS ECR Public** para evitar
+dependencia de Docker Hub.
+
+### Containerfile (Backend)
+
+Ubicacion: `backend/Containerfile`
 
 ```dockerfile
-FROM python:3.11-slim
+# Build stage - AWS ECR Public image
+FROM public.ecr.aws/docker/library/python:3.12-slim AS builder
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY . .
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# Runtime stage - AWS ECR Public image
+FROM public.ecr.aws/docker/library/python:3.12-slim
+
+WORKDIR /app
+
+COPY --from=builder /install /usr/local
+COPY app/ ./app/
+COPY scripts/ ./scripts/
+
+RUN mkdir -p /app/data/tenants /app/data/_global
 
 EXPOSE 8000
 
-CMD ["gunicorn", "app.main:app", \
-     "--workers", "4", \
-     "--worker-class", "uvicorn.workers.UvicornWorker", \
-     "--bind", "0.0.0.0:8000"]
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
+
+### Orquestacion con podman-compose
+
+Ubicacion: `podman-compose.yml` (raiz del proyecto)
+
+```bash
+# Construir y levantar
+podman-compose up --build
+
+# Levantar en background
+podman-compose up -d
+
+# Detener
+podman-compose down
+
+# Ver logs
+podman-compose logs -f backend
+```
+
+### Build manual (sin compose)
+
+Ubicacion: `backend/build.sh`
+
+```bash
+cd backend
+./build.sh
+```
+
+Este script ejecuta `podman build` y `podman run` directamente.
+
+### Imagenes AWS ECR Public
+
+Todas las imagenes base usan el prefijo `public.ecr.aws/docker/library/`:
+
+| Imagen | Uso |
+| ------ | --- |
+| `public.ecr.aws/docker/library/python:3.12-slim` | Backend FastAPI (build y runtime) |
+| `public.ecr.aws/docker/library/ubuntu:24.04` | Flutter web dev container (SDK + hot reload) |
+
+**Por que ECR Public y no Docker Hub:**
+- Sin rate limits de descarga
+- Sin autenticacion requerida para imagenes publicas
+- CDN global de AWS con mejor latencia en America Latina
+- Cumplimiento de politicas empresariales que restringen Docker Hub
 
 ## 3. Frontend (Flutter)
 
-### Compilacion
+### Desarrollo Web (Hot Reload)
+
+Flutter permite ejecutar la app en el navegador para desarrollo rapido,
+sin necesidad de compilar para movil.
+
+#### Containerfile (Flutter Web Dev)
+
+Ubicacion: `mobile/Containerfile`
+
+```dockerfile
+# Base stage - AWS ECR Public image
+FROM public.ecr.aws/docker/library/ubuntu:24.04 AS base
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV FLUTTER_HOME=/opt/flutter
+ENV PATH="$FLUTTER_HOME/bin:$PATH"
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl git unzip xz-utils zip libglu1-mesa \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN git clone --depth 1 --branch stable \
+    https://github.com/flutter/flutter.git "$FLUTTER_HOME"
+
+RUN flutter precache --web \
+    && yes | flutter doctor --android-licenses \
+    && flutter doctor
+
+# Development stage
+FROM base AS dev
+WORKDIR /app
+COPY pubspec.yaml pubspec.lock* ./
+RUN flutter pub get || true
+EXPOSE 8080
+CMD ["flutter", "run", "-d", "web-server", \
+     "--web-port=8080", "--web-hostname=0.0.0.0"]
+```
+
+#### Orquestacion (podman-compose)
+
+El servicio `flutter-web` esta incluido en `podman-compose.yml`:
+
+```bash
+# Levantar backend + Flutter web
+podman-compose up --build
+
+# Solo Flutter web (requiere backend corriendo)
+podman-compose up flutter-web
+
+# Primera vez: instalar dependencias
+podman exec -it agua-flutter-web flutter pub get
+```
+
+Accede a `http://localhost:8080` en tu navegador. El Hot Reload funciona
+via volume mount: editas el codigo en tu IDE y el navegador se actualiza
+automaticamente.
+
+#### Deteccion de Plataforma (baseUrl)
+
+El `baseUrl` se detecta automaticamente segun la plataforma:
+
+| Plataforma | URL | Motivo |
+| ---------- | --- | ------ |
+| **Web** | `http://localhost:8000` | El navegador corre en el host, localhost apunta al backend |
+| **Android emulator** | `http://10.0.2.2:8000` | IP especial del emulador para acceder al host |
+
+Configuracion en `lib/core/config/env_config.dart`:
+
+```dart
+import 'package:flutter/foundation.dart';
+
+class EnvConfig {
+  EnvConfig._();
+
+  static String get baseUrl {
+    if (kIsWeb) {
+      return 'http://localhost:8000';
+    }
+    return 'http://10.0.2.2:8000';
+  }
+
+  static bool get isWeb => kIsWeb;
+}
+```
+
+### Compilacion (Movil)
 
 ```bash
 # Android

@@ -1,0 +1,56 @@
+# podman-compose.yml - Agua Backend + Flutter Web
+# Run with: podman-compose up --build
+#
+# Services:
+#   backend     — FastAPI API (port 8000)
+#   flutter-web — Flutter web dev server with hot reload (port 8080)
+
+services:
+  backend:
+    build:
+      context: ./backend
+      containerfile: Containerfile
+    container_name: agua-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - agua-data:/app/data:Z
+    environment:
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DATABASE_DIR=/app/data/tenants
+    restart: unless-stopped
+    # Single string, not the exec form ["CMD", "python", "..."].
+    # podman-compose rebuilds the exec form as `/bin/sh -c python' '-c' ...`,
+    # which corrupts the command and marks a healthy backend as unhealthy.
+    healthcheck:
+      test: ["CMD", "python /app/scripts/healthcheck.py"]
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+
+  flutter-web:
+    build:
+      context: ./mobile
+      containerfile: Containerfile
+    container_name: agua-flutter-web
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./mobile:/app:Z
+      - flutter-pub-cache:/root/.pub-cache:Z
+    environment:
+      - PUB_CACHE=/root/.pub-cache
+    depends_on:
+      backend:
+        condition: service_healthy
+    # Keeps the container running for hot reload.
+    # First run: `podman exec -it agua-flutter-web flutter pub get`
+    # Then hot reload works automatically via volume mount.
+
+volumes:
+  agua-data:
+    driver: local
+  flutter-pub-cache:
+    driver: local

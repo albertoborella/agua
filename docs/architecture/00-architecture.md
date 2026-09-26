@@ -23,10 +23,11 @@ Cada empresa (tenant) tiene su propia base de datos SQLite3 aislada.
 | Capa | Tecnologia | Justificacion |
 | ---- | ---------- | ------------- |
 | **Frontend movil** | Flutter | Una sola base de codigo para iOS y Android. Dart es rapido y el hot reload acelera el desarrollo. |
-| **Backend** | Python 3.11+ / FastAPI | API REST async de alto rendimiento, tipado estricto, documentacion OpenAPI automatica. |
+| **Backend** | Python 3.12+ / FastAPI | API REST async de alto rendimiento, tipado estricto, documentacion OpenAPI automatica. |
 | **ORM** | SQLModel | Combina Pydantic y SQLAlchemy en una sola capa. Ideal para FastAPI porque los modelos sirven como schemas de validacion y como mapeo a DB. |
 | **Base de datos** | SQLite3 | Sin infraestructura externa, ideal para MVP y para instancias independentes por tenant. Archivo `.db` por empresa. |
 | **Autenticacion** | JWT (access + refresh tokens) | Stateless, escalable, estandar para APIs REST. |
+| **Contenedores** | Podman + AWS ECR Public | Podman como runtime de contenedores (sin daemon, compatible con Docker). Imagenes base desde `public.ecr.aws` para evitar dependencia de Docker Hub. |
 
 ## Patrones Arquitectonicos
 
@@ -120,26 +121,28 @@ agua/
 │   │   └── middleware/          ← Tenant resolution, auth
 │   ├── scripts/
 │   │   └── createsuperadmin.py  ← Script de inicializacion
+│   ├── Containerfile            ← Build de imagen Podman (AWS ECR)
+│   ├── build.sh                 ← Script helper para build/run
 │   ├── requirements.txt
-│   └── alembic/                 ← Migraciones (futuro)
+│   └── data/                    ← SQLite3 databases (volumen)
 ├── mobile/
 │   ├── lib/
 │   │   ├── main.dart
-│   │   ├── app/
-│   │   │   ├── routes.dart
-│   │   │   └── theme.dart
+│   │   ├── core/
+│   │   │   ├── config/
+│   │   │   │   └── env_config.dart  ← Platform-aware API URL
+│   │   │   ├── theme/
+│   │   │   └── constants/
 │   │   ├── features/
 │   │   │   ├── auth/
 │   │   │   ├── home/
 │   │   │   ├── samples/
 │   │   │   └── alerts/
 │   │   ├── models/
-│   │   ├── services/
-│   │   │   ├── api_service.dart
-│   │   │   └── sync_service.dart
-│   │   └── database/
-│   │       └── local_db.dart
+│   │   └── services/
+│   │       └── api_service.dart
+│   ├── Containerfile            ← Flutter web dev (Podman, AWS ECR)
 │   └── pubspec.yaml
-├── docs/
-└── docker/
+├── podman-compose.yml           ← Orquestacion (backend + flutter-web)
+└── docs/
 ```

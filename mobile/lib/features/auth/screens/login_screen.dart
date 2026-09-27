@@ -78,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 48),
 
-                  // Tenant warning
+                  // Tenant warning / display
                   if (!hasTenant) ...[
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -105,11 +105,65 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    TextButton.icon(
+                    FilledButton.icon(
                       onPressed: () =>
                           Navigator.pushNamed(context, '/settings'),
                       icon: const Icon(Icons.settings),
-                      label: const Text('Ir a Configuración'),
+                      label: const Text('Configurar ID de empresa'),
+                    ),
+                    const SizedBox(height: 24),
+                  ] else ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primaryContainer
+                            .withAlpha(100),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.primary
+                              .withAlpha(100),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.business,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'ID de empresa configurado',
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  auth.tenantId!,
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () =>
+                                Navigator.pushNamed(context, '/settings'),
+                            icon: const Icon(Icons.edit),
+                            label: const Text('Cambiar'),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 24),
                   ],
@@ -165,22 +219,46 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 24),
 
                   // Error message
-                  if (auth.error != null)
+                  if (auth.error != null) ...[
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.error.withAlpha(20),
+                        color:
+                            Theme.of(context).colorScheme.errorContainer.withAlpha(100),
                         borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        auth.error!,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.error.withAlpha(100),
                         ),
-                        textAlign: TextAlign.center,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            auth.error!,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          if (auth.error!
+                              .contains('ID de empresa no está registrado')) ...[
+                            const SizedBox(height: 8),
+                            TextButton.icon(
+                              onPressed: () =>
+                                  Navigator.pushNamed(context, '/settings'),
+                              icon: const Icon(Icons.settings, size: 18),
+                              label: const Text('Cambiar ID de empresa'),
+                              style: TextButton.styleFrom(
+                                foregroundColor:
+                                    Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                  if (auth.error != null) const SizedBox(height: 16),
+                    const SizedBox(height: 16),
+                  ],
 
                   // Login button
                   ElevatedButton(

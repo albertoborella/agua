@@ -492,6 +492,21 @@ class ApiService {
     }
   }
 
+  Future<Map<String, int>> getSampleCounts() async {
+    final response = await _get('/samples/counts');
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      return {
+        'realizadas': data['realizadas'] as int,
+        'pendientes': data['pendientes'] as int,
+        'vencidas': data['vencidas'] as int,
+      };
+    } else {
+      throw Exception('Error al obtener conteos');
+    }
+  }
+
   // Alerts
   Future<List<Alert>> getPendingAlerts() async {
     final response = await _get('/alerts/pending');

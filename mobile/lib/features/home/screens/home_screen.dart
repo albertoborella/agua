@@ -2,8 +2,47 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../auth/providers/auth_provider.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  Map<String, int> _counts = {'realizadas': 0, 'pendientes': 0, 'vencidas': 0};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCounts();
+  }
+
+  Future<void> _loadCounts() async {
+    try {
+      final api = context.read<AuthProvider>().api;
+      final counts = await api.getSampleCounts();
+      if (mounted) {
+        setState(() {
+          _counts = counts;
+        });
+      }
+    } catch (e) {
+      // Silently fail, show 0s
+    }
+  }
+
+  Future<void> _refresh() async {
+    await _loadCounts();
+  }
+
+  Future<void> _logout(BuildContext context) async {
+    final auth = context.read<AuthProvider>();
+    await auth.logout();
+    if (context.mounted) {
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,9 +136,7 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () async {
-          // TODO: refresh data
-        },
+        onRefresh: _refresh,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
@@ -117,25 +154,28 @@ class HomeScreen extends StatelessWidget {
               _buildSummaryCard(
                 context,
                 title: 'Pendientes',
-                count: 0,
+                count: _counts['pendientes'] ?? 0,
                 icon: Icons.pending_actions,
                 color: Colors.orange,
+                onTap: () => Navigator.pushNamed(context, '/history'),
               ),
               const SizedBox(height: 12),
               _buildSummaryCard(
                 context,
                 title: 'Realizadas',
-                count: 0,
+                count: _counts['realizadas'] ?? 0,
                 icon: Icons.check_circle_outline,
                 color: Colors.green,
+                onTap: () => Navigator.pushNamed(context, '/history'),
               ),
               const SizedBox(height: 12),
               _buildSummaryCard(
                 context,
                 title: 'Vencidas',
-                count: 0,
+                count: _counts['vencidas'] ?? 0,
                 icon: Icons.warning_amber,
                 color: Colors.red,
+                onTap: () => Navigator.pushNamed(context, '/history'),
               ),
               const SizedBox(height: 32),
 
@@ -179,6 +219,24 @@ class HomeScreen extends StatelessWidget {
                   icon: const Icon(Icons.people),
                   label: const Text('Usuarios'),
                 ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.pushNamed(context, '/admin/analysis-types'),
+                  icon: const Icon(Icons.science),
+                  label: const Text('Tipos de Análisis'),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.pushNamed(context, '/admin/water-sources'),
+                  icon: const Icon(Icons.water_drop),
+                  label: const Text('Fuentes de Agua'),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.pushNamed(context, '/admin/sampling-frequencies'),
+                  icon: const Icon(Icons.repeat),
+                  label: const Text('Frecuencias de Muestreo'),
+                ),
               ],
             ],
           ),
@@ -193,38 +251,35 @@ class HomeScreen extends StatelessWidget {
     required int count,
     required IconData icon,
     required Color color,
+    required VoidCallback onTap,
   }) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(icon, size: 32, color: color),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                title,
-                style: Theme.of(context).textTheme.titleMedium,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Icon(icon, size: 32, color: color),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               ),
-            ),
-            Text(
-              count.toString(),
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-          ],
+              Text(
+                count.toString(),
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+            ],
+          ),
         ),
       ),
     );
-  }
-
-  Future<void> _logout(BuildContext context) async {
-    final auth = context.read<AuthProvider>();
-    await auth.logout();
-    if (context.mounted) {
-      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-    }
   }
 }

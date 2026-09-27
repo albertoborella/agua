@@ -250,7 +250,15 @@ class _NewSampleScreenState extends State<NewSampleScreen> {
                         // fresh FormField: a DropdownButtonFormField pushes a
                         // changed `initialValue` back through `onChanged`,
                         // which would re-run the chlorine random pick.
-                        key: ValueKey(_selectedTypeId),
+                        //
+                        // The 'analysis-type' prefix is required, not decoration.
+                        // Both dropdowns are siblings in the same Column and both
+                        // start as null, so a bare ValueKey(_selectedTypeId) and
+                        // ValueKey(_selectedSourceId) would still collide on the
+                        // first render and trip Flutter's "Duplicate keys found"
+                        // assert. Namespacing makes the two keys distinct even
+                        // when the values are equal or both null.
+                        key: ValueKey('analysis-type-${_selectedTypeId ?? ''}'),
                         initialValue: _selectedTypeId,
                         decoration: const InputDecoration(
                           labelText: 'Tipo de análisis',
@@ -294,8 +302,9 @@ class _NewSampleScreenState extends State<NewSampleScreen> {
                         _buildSuggestedSource()
                       else
                         DropdownButtonFormField<String>(
-                          // Same reason as the type dropdown above.
-                          key: ValueKey(_selectedTypeId),
+                          // Same reason as the type dropdown above, and
+                          // namespaced for the same duplicate-key reason.
+                          key: ValueKey('water-source-${_selectedSourceId ?? ''}'),
                           initialValue: _selectedSourceId,
                           decoration: const InputDecoration(
                             labelText: 'Fuente de agua',

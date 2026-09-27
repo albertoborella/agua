@@ -207,8 +207,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
           DropdownButtonFormField<String>(
             // Keyed by the current value: a DropdownButtonFormField pushes a
             // changed `initialValue` back through `onChanged`, which would
-            // double-fire the reload.
-            key: ValueKey(_selectedSourceId),
+            // double-fire the reload. Namespaced because both filters are
+            // siblings in the same Column and both start as null, so unprefixed
+            // keys would collide and trip Flutter's "Duplicate keys found".
+            key: ValueKey('filter-source-${_selectedSourceId ?? ''}'),
             initialValue: _selectedSourceId,
             decoration: const InputDecoration(
               labelText: 'Fuente',
@@ -234,7 +236,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
           const SizedBox(height: 24),
 
           DropdownButtonFormField<String>(
-            key: ValueKey(_selectedTypeId),
+            // Namespaced for the same duplicate-key reason as the filter above.
+            key: ValueKey('filter-type-${_selectedTypeId ?? ''}'),
             initialValue: _selectedTypeId,
             decoration: const InputDecoration(
               labelText: 'Tipo de análisis',

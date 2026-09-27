@@ -24,6 +24,10 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
+    # Local network origins (0.0.0.0, LAN IPs for phone/tablet testing) in
+    # development only. Starlette echoes the matched origin back, so this stays
+    # compatible with allow_credentials.
+    allow_origin_regex=settings.cors_allow_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

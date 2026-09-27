@@ -31,6 +31,74 @@ class ApiService {
     _tenantId = null;
   }
 
+  // Authenticated transport.
+  //
+  // Access tokens live 30 minutes, so a session that was healthy when the app
+  // was opened dies while it is still open, and every subsequent call comes
+  // back 401 with nothing in the app willing to recover. All authenticated
+  // calls go through here so that recovery is one policy, not fifteen copies
+  // of it, and so the per-call Spanish error messages stay where they are.
+  Future<http.Response> _get(String path, {Map<String, String>? query}) =>
+      _send(() {
+        final uri = Uri.parse('$baseUrl$path');
+        return http.get(
+          query == null ? uri : uri.replace(queryParameters: query),
+          headers: _headers,
+        );
+      });
+
+  Future<http.Response> _post(String path, Object body) =>
+      _send(() => http.post(Uri.parse('$baseUrl$path'),
+          headers: _headers, body: body));
+
+  Future<http.Response> _put(String path) =>
+      _send(() => http.put(Uri.parse('$baseUrl$path'), headers: _headers));
+
+  /// Runs [send], and on a 401 renews the session once and replays it.
+  ///
+  /// [send] is a closure rather than a built request on purpose: the replay
+  /// re-reads `_headers`, so the second attempt necessarily goes out with the
+  /// token the renewal produced instead of the one that just got rejected.
+  ///
+  /// Exactly one renewal, then one replay. A token the backend keeps refusing
+  /// has not become acceptable by asking again, and retrying without a bound
+  /// would turn a dead session into a request loop.
+  Future<http.Response> _send(Future<http.Response> Function() send) async {
+    final response = await send();
+    if (response.statusCode != 401 || _refreshToken == null) return response;
+    if (!await _renewOnce()) return response;
+    return send();
+  }
+
+  /// Single-flight guard around [refreshToken].
+  ///
+  /// Screens fire several calls at once, so a burst of 401s would otherwise
+  /// start one renewal per call, and every one of them calls `setTokens` -- the
+  /// last writer wins. Today the backend is stateless and hands back an
+  /// equivalent token each time, so the stampede is merely N redundant round
+  /// trips on the slowest, most constrained path a mobile device has. It also
+  /// makes the guard cheap insurance rather than a load-bearing assumption: the
+  /// moment refresh tokens are revoked or rotated on use, one winner and N-1
+  /// failures means the losers throw on a session that is still perfectly
+  /// alive. Sharing the in-flight renewal means every caller waits on the same
+  /// result and replays with the same fresh token either way.
+  Future<bool>? _renewInFlight;
+
+  Future<bool> _renewOnce() => _renewInFlight ??=
+      _renew().whenComplete(() => _renewInFlight = null);
+
+  /// Renewal as a boolean, because a failure here is a normal outcome: it means
+  /// the session is over, and the caller should surface its own error rather
+  /// than an exception about tokens.
+  Future<bool> _renew() async {
+    try {
+      await refreshToken();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // Auth
   Future<Map<String, dynamic>> login(
       String username, String password, String tenantId) async {
@@ -86,14 +154,10 @@ class ApiService {
   }
 
   Future<void> changePassword(String currentPassword, String newPassword) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/change-password'),
-      headers: _headers,
-      body: json.encode({
-        'current_password': currentPassword,
-        'new_password': newPassword,
-      }),
-    );
+    final response = await _post('/auth/change-password', json.encode({
+      'current_password': currentPassword,
+      'new_password': newPassword,
+    }));
 
     if (response.statusCode != 200) {
       throw Exception('Error al cambiar contraseña');
@@ -102,10 +166,7 @@ class ApiService {
 
   // Admin - Plants
   Future<List<Plant>> getPlants() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/admin/plants'),
-      headers: _headers,
-    );
+    final response = await _get('/admin/plants');
 
     if (response.statusCode == 200) {
       final List data = json.decode(response.body);
@@ -116,11 +177,8 @@ class ApiService {
   }
 
   Future<Plant> createPlant(String nombre, String? direccion) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/admin/plants'),
-      headers: _headers,
-      body: json.encode({'nombre': nombre, 'direccion': direccion}),
-    );
+    final response = await _post(
+        '/admin/plants', json.encode({'nombre': nombre, 'direccion': direccion}));
 
     if (response.statusCode == 200) {
       return Plant.fromJson(json.decode(response.body));
@@ -131,10 +189,7 @@ class ApiService {
 
   // Admin - Water Sources
   Future<List<WaterSource>> getSources() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/admin/sources'),
-      headers: _headers,
-    );
+    final response = await _get('/admin/sources');
 
     if (response.statusCode == 200) {
       final List data = json.decode(response.body);
@@ -146,16 +201,12 @@ class ApiService {
 
   Future<WaterSource> createSource(String plantaId, String nombre, String tipo,
       {String? ubicacion}) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/admin/sources'),
-      headers: _headers,
-      body: json.encode({
-        'planta_id': plantaId,
-        'nombre': nombre,
-        'tipo': tipo,
-        'ubicacion': ubicacion,
-      }),
-    );
+    final response = await _post('/admin/sources', json.encode({
+      'planta_id': plantaId,
+      'nombre': nombre,
+      'tipo': tipo,
+      'ubicacion': ubicacion,
+    }));
 
     if (response.statusCode == 200) {
       return WaterSource.fromJson(json.decode(response.body));
@@ -168,10 +219,7 @@ class ApiService {
   // Reads the global catalog, which is open to any authenticated user (an
   // operario must be able to pick an analysis type). Writes stay ADMIN-only.
   Future<List<AnalysisType>> getAnalysisTypes() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/catalog/analysis-types'),
-      headers: _headers,
-    );
+    final response = await _get('/catalog/analysis-types');
 
     if (response.statusCode == 200) {
       final List data = json.decode(response.body);
@@ -183,15 +231,11 @@ class ApiService {
 
   Future<AnalysisType> createAnalysisType(String codigo, String nombre,
       {bool requiereDescripcion = false}) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/admin/analysis-types'),
-      headers: _headers,
-      body: json.encode({
-        'codigo': codigo,
-        'nombre': nombre,
-        'requiere_descripcion': requiereDescripcion,
-      }),
-    );
+    final response = await _post('/admin/analysis-types', json.encode({
+      'codigo': codigo,
+      'nombre': nombre,
+      'requiere_descripcion': requiereDescripcion,
+    }));
 
     if (response.statusCode == 200) {
       return AnalysisType.fromJson(json.decode(response.body));
@@ -202,10 +246,7 @@ class ApiService {
 
   // Admin - Frequencies
   Future<List<SamplingFrequency>> getFrequencies() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/admin/frequencies'),
-      headers: _headers,
-    );
+    final response = await _get('/admin/frequencies');
 
     if (response.statusCode == 200) {
       final List data = json.decode(response.body);
@@ -217,10 +258,7 @@ class ApiService {
 
   // Admin - Users
   Future<List<User>> getUsers() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/admin/users'),
-      headers: _headers,
-    );
+    final response = await _get('/admin/users');
 
     if (response.statusCode == 200) {
       final List data = json.decode(response.body);
@@ -231,16 +269,12 @@ class ApiService {
   }
 
   Future<User> createUser(String username, String email, String password, String rol) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/admin/users'),
-      headers: _headers,
-      body: json.encode({
-        'username': username,
-        'email': email,
-        'password': password,
-        'rol': rol,
-      }),
-    );
+    final response = await _post('/admin/users', json.encode({
+      'username': username,
+      'email': email,
+      'password': password,
+      'rol': rol,
+    }));
 
     if (response.statusCode == 200) {
       return User.fromJson(json.decode(response.body));
@@ -251,10 +285,7 @@ class ApiService {
 
   // Samples
   Future<List<Map<String, dynamic>>> getSampleSources() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/samples/sources'),
-      headers: _headers,
-    );
+    final response = await _get('/samples/sources');
 
     if (response.statusCode == 200) {
       final List data = json.decode(response.body);
@@ -265,14 +296,10 @@ class ApiService {
   }
 
   Future<SampleRecord> createSample(String fuenteId, String tipoAnalisisId) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/samples'),
-      headers: _headers,
-      body: json.encode({
-        'fuente_id': fuenteId,
-        'tipo_analisis_id': tipoAnalisisId,
-      }),
-    );
+    final response = await _post('/samples', json.encode({
+      'fuente_id': fuenteId,
+      'tipo_analisis_id': tipoAnalisisId,
+    }));
 
     if (response.statusCode == 200) {
       return SampleRecord.fromJson(json.decode(response.body));
@@ -282,10 +309,7 @@ class ApiService {
   }
 
   Future<List<SampleRecord>> getTodaySamples() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/samples/today'),
-      headers: _headers,
-    );
+    final response = await _get('/samples/today');
 
     if (response.statusCode == 200) {
       final List data = json.decode(response.body);
@@ -307,9 +331,7 @@ class ApiService {
     if (fechaDesde != null) queryParams['fecha_desde'] = fechaDesde;
     if (fechaHasta != null) queryParams['fecha_hasta'] = fechaHasta;
 
-    final uri = Uri.parse('$baseUrl/samples/history')
-        .replace(queryParameters: queryParams);
-    final response = await http.get(uri, headers: _headers);
+    final response = await _get('/samples/history', query: queryParams);
 
     if (response.statusCode == 200) {
       final List data = json.decode(response.body);
@@ -321,10 +343,7 @@ class ApiService {
 
   // Alerts
   Future<List<Alert>> getPendingAlerts() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/alerts/pending'),
-      headers: _headers,
-    );
+    final response = await _get('/alerts/pending');
 
     if (response.statusCode == 200) {
       final List data = json.decode(response.body);
@@ -335,10 +354,7 @@ class ApiService {
   }
 
   Future<Alert> markAlertRead(String alertId) async {
-    final response = await http.put(
-      Uri.parse('$baseUrl/alerts/$alertId/read'),
-      headers: _headers,
-    );
+    final response = await _put('/alerts/$alertId/read');
 
     if (response.statusCode == 200) {
       return Alert.fromJson(json.decode(response.body));

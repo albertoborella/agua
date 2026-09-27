@@ -122,8 +122,46 @@ class ApiService {
       setTokens(accessToken, refreshToken, tenantId);
       return data;
     } else {
-      throw Exception('Credenciales inválidas');
+      throw Exception(_errorDetail(response) ?? 'Credenciales inválidas');
     }
+  }
+
+  /// The `detail` a failed request carries, or null when there is nothing
+  /// presentable to show.
+  ///
+  /// The backend answers a rejected login with `{"detail": "..."}`, and that
+  /// sentence is written for the user: a mistyped company id gets a 404 that
+  /// names the id as the problem, and only a genuine wrong password gets a 401.
+  /// Collapsing both into one hardcoded "Credenciales inválidas" points the
+  /// user at the password, which is the half that was right. The client's job is
+  /// to get out of the way and repeat the sentence.
+  ///
+  /// Null for every shape we cannot show, so the caller keeps its own message
+  /// instead of surfacing our parsing:
+  ///   * a body that is not JSON at all -- an HTML page from a proxy, an empty
+  ///     body. [json.decode] would throw a FormatException about quoting and
+  ///     colons, which tells the user nothing about their login.
+  ///   * JSON that is not an object: a list, a bare string, a number, null.
+  ///   * no `detail` key, or one that is not a string. The 422 for a missing
+  ///     form field really does answer with `detail` as a LIST of validation
+  ///     objects, and stringifying that would put framework internals on the
+  ///     login screen.
+  ///   * a `detail` that is only whitespace, which is a string that says
+  ///     nothing.
+  ///
+  /// Returns the detail as sent, not trimmed: the sentence is the backend's
+  /// copy and reformatting it here would only make the two drift apart.
+  String? _errorDetail(http.Response response) {
+    Object? decoded;
+    try {
+      decoded = json.decode(response.body);
+    } on FormatException {
+      return null;
+    }
+    if (decoded is! Map<String, dynamic>) return null;
+    final detail = decoded['detail'];
+    if (detail is! String) return null;
+    return detail.trim().isEmpty ? null : detail;
   }
 
   Future<Map<String, dynamic>> refreshToken() async {

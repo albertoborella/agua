@@ -44,6 +44,12 @@ EXPOSE 8080
 
 # Flutter web dev server — watches for file changes via volume mount.
 # Access at http://localhost:8080 in your browser.
+#
+# API_BASE_URL is declared explicitly instead of relying on platform sniffing:
+# the browser resolves "localhost" to the host, and the backend is published on
+# port 8000. Override it for a remote backend with
+#   podman run -e API_BASE_URL=http://<host>:8000 ...
 CMD ["flutter", "run", "-d", "web-server", \
      "--web-port=8080", \
-     "--web-hostname=0.0.0.0"]
+     "--web-hostname=0.0.0.0", \
+     "--dart-define=API_BASE_URL=http://localhost:8000"]

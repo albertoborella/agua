@@ -352,6 +352,61 @@ class ApiService {
     }
   }
 
+  Future<SamplingFrequency> createFrequency({
+    required String fuenteId,
+    required String tipoAnalisisId,
+    required String frecuencia,
+    String? diasSemana,
+    String? horaEsperada,
+  }) async {
+    final response = await _post('/admin/frequencies', json.encode({
+      'fuente_id': fuenteId,
+      'tipo_analisis_id': tipoAnalisisId,
+      'frecuencia': frecuencia,
+      if (diasSemana != null) 'dias_semana': diasSemana,
+      if (horaEsperada != null) 'hora_esperada': horaEsperada,
+    }));
+
+    if (response.statusCode == 200) {
+      return SamplingFrequency.fromJson(json.decode(response.body));
+    } else {
+      throw Exception('Error al crear frecuencia');
+    }
+  }
+
+  Future<SamplingFrequency> updateFrequency(
+    String frequencyId, {
+    String? frecuencia,
+    String? diasSemana,
+    String? horaEsperada,
+    bool? activa,
+  }) async {
+    final body = <String, dynamic>{};
+    if (frecuencia != null) body['frecuencia'] = frecuencia;
+    if (diasSemana != null) body['dias_semana'] = diasSemana;
+    if (horaEsperada != null) body['hora_esperada'] = horaEsperada;
+    if (activa != null) body['activa'] = activa;
+
+    final response = await _put(
+      '/admin/frequencies/$frequencyId',
+      json.encode(body),
+    );
+
+    if (response.statusCode == 200) {
+      return SamplingFrequency.fromJson(json.decode(response.body));
+    } else {
+      throw Exception('Error al actualizar frecuencia');
+    }
+  }
+
+  Future<void> deleteFrequency(String frequencyId) async {
+    final response = await _delete('/admin/frequencies/$frequencyId');
+
+    if (response.statusCode != 200) {
+      throw Exception('Error al eliminar frecuencia');
+    }
+  }
+
   // Admin - Users
   Future<List<User>> getUsers() async {
     final response = await _get('/admin/users');

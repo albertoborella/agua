@@ -51,8 +51,12 @@ class ApiService {
       _send(() => http.post(Uri.parse('$baseUrl$path'),
           headers: _headers, body: body));
 
-  Future<http.Response> _put(String path) =>
-      _send(() => http.put(Uri.parse('$baseUrl$path'), headers: _headers));
+  Future<http.Response> _put(String path, [Object? body]) =>
+      _send(() => http.put(Uri.parse('$baseUrl$path'),
+          headers: _headers, body: body));
+
+  Future<http.Response> _delete(String path) =>
+      _send(() => http.delete(Uri.parse('$baseUrl$path'), headers: _headers));
 
   /// Runs [send], and on a 401 renews the session once and replays it.
   ///
@@ -253,6 +257,32 @@ class ApiService {
     }
   }
 
+  Future<WaterSource> updateSource(String sourceId, String nombre, String tipo,
+      {String? ubicacion, bool? activa}) async {
+    final body = <String, dynamic>{'nombre': nombre, 'tipo': tipo};
+    if (ubicacion != null) body['ubicacion'] = ubicacion;
+    if (activa != null) body['activa'] = activa;
+
+    final response = await _put(
+      '/admin/sources/$sourceId',
+      json.encode(body),
+    );
+
+    if (response.statusCode == 200) {
+      return WaterSource.fromJson(json.decode(response.body));
+    } else {
+      throw Exception('Error al actualizar fuente');
+    }
+  }
+
+  Future<void> deleteSource(String sourceId) async {
+    final response = await _delete('/admin/sources/$sourceId');
+
+    if (response.statusCode != 200) {
+      throw Exception('Error al eliminar fuente');
+    }
+  }
+
   // Catalog - analysis types
   // Reads the global catalog, which is open to any authenticated user (an
   // operario must be able to pick an analysis type). Writes stay ADMIN-only.
@@ -279,6 +309,34 @@ class ApiService {
       return AnalysisType.fromJson(json.decode(response.body));
     } else {
       throw Exception('Error al crear tipo de análisis');
+    }
+  }
+
+  Future<AnalysisType> updateAnalysisType(
+    String typeId,
+    String nombre, {
+    bool? requiereDescripcion,
+  }) async {
+    final body = <String, dynamic>{'nombre': nombre};
+    if (requiereDescripcion != null) body['requiere_descripcion'] = requiereDescripcion;
+
+    final response = await _put(
+      '/admin/analysis-types/$typeId',
+      json.encode(body),
+    );
+
+    if (response.statusCode == 200) {
+      return AnalysisType.fromJson(json.decode(response.body));
+    } else {
+      throw Exception('Error al actualizar tipo de análisis');
+    }
+  }
+
+  Future<void> deleteAnalysisType(String typeId) async {
+    final response = await _delete('/admin/analysis-types/$typeId');
+
+    if (response.statusCode != 200) {
+      throw Exception('Error al eliminar tipo de análisis');
     }
   }
 

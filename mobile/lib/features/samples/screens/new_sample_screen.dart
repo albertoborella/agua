@@ -86,6 +86,92 @@ class _NewSampleScreenState extends State<NewSampleScreen> {
       _selectedSourceId =
           (type != null && type.isCloro) ? _pickRandomSourceId() : null;
     });
+    // If OTRO is selected, prompt to create a custom analysis type.
+    if (typeId != null) {
+      final selectedType = _findById(_analysisTypes, typeId,
+          (AnalysisType t) => t.id);
+      if (selectedType?.codigo == 'OTRO') {
+        _promptCustomAnalysisType();
+      }
+    }
+  }
+
+  Future<void> _promptCustomAnalysisType() async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Crear análisis personalizado'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'El análisis "Otro" requiere una descripción. '
+              'Ingresá el nombre del nuevo tipo de análisis:',
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'Nombre del análisis',
+                hintText: 'ej: Análisis de pH, Metales pesados, etc.',
+                prefixIcon: Icon(Icons.science_outlined),
+              ),
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Crear'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (result != null && result.isNotEmpty) {
+      await _createCustomAnalysisType(result);
+    }
+  }
+
+  Future<void> _createCustomAnalysisType(String nombre) async {
+    try {
+      // Auto-generate code from name: uppercase, first 10 chars, only alnum
+      final codigo = nombre
+          .toUpperCase()
+          .replaceAll(RegExp(r'[^A-Z0-9]'), '')
+          .substring(0, min(10, nombre.length));
+      final newType =
+          await _api.createAnalysisType(codigo, nombre, requiereDescripcion: true);
+      setState(() {
+        _analysisTypes.add(newType);
+        _selectedTypeId = newType.id;
+      });
+      // Chlorine rule: if the new type has codigo CLORO, trigger random source
+      if (newType.isCloro) {
+        setState(() {
+          _selectedSourceId = _pickRandomSourceId();
+        });
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Análisis "$nombre" creado')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al crear análisis: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
   }
 
   void _onSourceChanged(String? sourceId) {

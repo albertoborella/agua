@@ -54,3 +54,20 @@ def authenticate_user(session: Session, username: str, password: str, tenant_id:
     if not user or not verify_password(password, user.password_hash):
         return None
     return user
+
+
+def tenant_has_users(session: Session, tenant_id: str) -> bool:
+    """Whether this tenant has at least one user row, active or not.
+
+    Used by the login route to tell "this company id is not provisioned"
+    apart from "wrong password", which otherwise both collapse into a bare
+    401 and send the user hunting for a password problem they do not have.
+
+    Deliberately does NOT filter on `activo`: a tenant whose only users are
+    deactivated still exists, and it must keep answering with the generic
+    401 rather than claiming it was never configured.
+    """
+    return (
+        session.exec(select(User.id).where(User.tenant_id == tenant_id).limit(1)).first()
+        is not None
+    )

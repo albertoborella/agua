@@ -434,6 +434,46 @@ class ApiService {
     }
   }
 
+  Future<User> updateUser(String userId, {
+    String? email,
+    String? rol,
+    bool? activo,
+  }) async {
+    final body = <String, dynamic>{};
+    if (email != null) body['email'] = email;
+    if (rol != null) body['rol'] = rol;
+    if (activo != null) body['activo'] = activo;
+
+    final response = await _put(
+      '/admin/users/$userId',
+      json.encode(body),
+    );
+
+    if (response.statusCode == 200) {
+      return User.fromJson(json.decode(response.body));
+    } else {
+      throw Exception('Error al actualizar usuario');
+    }
+  }
+
+  Future<void> deleteUser(String userId) async {
+    final response = await _delete('/admin/users/$userId');
+
+    if (response.statusCode != 200) {
+      throw Exception('Error al eliminar usuario');
+    }
+  }
+
+  Future<void> resetUserPassword(String userId, String newPassword) async {
+    final response = await _post('/admin/users/$userId/reset-password', json.encode({
+      'new_password': newPassword,
+    }));
+
+    if (response.statusCode != 200) {
+      throw Exception('Error al restablecer contraseña');
+    }
+  }
+
   // Samples
   Future<List<Map<String, dynamic>>> getSampleSources() async {
     final response = await _get('/samples/sources');

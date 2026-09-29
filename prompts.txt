@@ -79,3 +79,7 @@ Perfecto, ahora hay que darle funcionalidad(CRUD + pantalla admin) de Fuentes de
 Perfecto, sigamos por la funcionalidad de Frecuencia de Muestreo.
 
 Con la funcionalidad a los 3 ultimis botones, deberíamos incorporar lo correspondiente al instructivo de la aplicacion. Una vez realizado eso hacé un commit y pusheo al repositorio.
+
+Bien, ahora creo que nos quedaria que pudieramos hacer el CRUD de usuarios, con los roles de Admin, Operario y Laboratorista.
+
+El boton Usuarios sigue sin funcionar

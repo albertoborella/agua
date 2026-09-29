@@ -6,6 +6,7 @@ from app.models.analysis_type import AnalysisType
 from app.models.sampling_frequency import SamplingFrequency
 from app.models.sample_record import SampleRecord
 from app.models.alert import Alert
+from app.models.role import UserRole
 
 __all__ = [
     "Tenant",
@@ -16,4 +17,5 @@ __all__ = [
     "SamplingFrequency",
     "SampleRecord",
     "Alert",
+    "UserRole",
 ]

@@ -1,5 +1,6 @@
 from sqlmodel import Session
 
+from app.models.role import UserRole
 from app.models.user import User
 from app.repositories.base import BaseRepository
 from app.services.auth_service import hash_password
@@ -10,7 +11,12 @@ class UserService:
         self.repo = BaseRepository(User, session)
         self.session = session
 
+    def _validate_rol(self, rol: str) -> None:
+        if not UserRole.is_valid(rol):
+            raise ValueError(f"Rol inválido. Valores permitidos: {', '.join(UserRole.values())}")
+
     def create_user(self, tenant_id: str, username: str, email: str, password: str, rol: str) -> User:
+        self._validate_rol(rol)
         return self.repo.create(
             {
                 "tenant_id": tenant_id,
@@ -28,6 +34,8 @@ class UserService:
         return self.repo.list_by_tenant(tenant_id, skip, limit)
 
     def update_user(self, tenant_id: str, user_id: str, **kwargs) -> User | None:
+        if "rol" in kwargs:
+            self._validate_rol(kwargs["rol"])
         return self.repo.update(user_id, kwargs)
 
     def delete_user(self, tenant_id: str, user_id: str) -> bool:

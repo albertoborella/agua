@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 
 from sqlmodel import Field, SQLModel
 
+from app.models.role import UserRole
+
 
 class User(SQLModel, table=True):
     __tablename__ = "users"
@@ -12,8 +14,16 @@ class User(SQLModel, table=True):
     username: str
     email: str
     password_hash: str
-    rol: str  # ADMIN, OPERARIO, LABORATORISTA
+    rol: str = Field(sa_column_kwargs={"comment": "ADMIN, OPERARIO, LABORATORISTA"})
     activo: bool = Field(default=True)
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
+
+    @property
+    def role(self) -> UserRole:
+        return UserRole(self.rol)
+
+    @role.setter
+    def role(self, value: UserRole) -> None:
+        self.rol = value.value

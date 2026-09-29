@@ -115,7 +115,41 @@ class HelpScreen extends StatelessWidget {
             ),
           ),
           _Section(
-            title: '5. Registrá tu primera muestra',
+            title: '5. Administrá catálogos (solo ADMIN)',
+            subtitle: 'En el Home, sección "Administración", tenés tres botones '
+                'para configurar lo que usan los operarios al registrar muestras.',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _Bullet(
+                  icon: Icons.science,
+                  text: '"Tipos de Análisis": creá, editá o eliminá los tipos '
+                      'que el operario elige (Cloro, FQ, MB, etc.). Los de '
+                      'sistema (CLORO, FQ, MB, OTRO) no se pueden borrar.',
+                ),
+                _Bullet(
+                  icon: Icons.water_drop,
+                  text: '"Fuentes de Agua": cargá grifos, pozos u otras fuentes '
+                      'asociadas a una planta. El tipo (GRIFO/POZO/RIO/...) '
+                      'define el icono y si aplica la regla de aleatoriedad.',
+                ),
+                _Bullet(
+                  icon: Icons.repeat,
+                  text: '"Frecuencias de Muestreo": definí cada cuánto se debe '
+                      'muestrear cada fuente para cada tipo de análisis '
+                      '(diaria, semanal, mensual, etc.), con día y hora '
+                      'esperada opcionales. Esto alimenta las alertas.',
+                ),
+                _Bullet(
+                  icon: Icons.info_outline,
+                  text: 'Los cambios son inmediatos: al volver a "Nueva Muestra" '
+                      'el operario ya ve los nuevos tipos y fuentes.',
+                ),
+              ],
+            ),
+          ),
+          _Section(
+            title: '6. Registrá tu primera muestra',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -149,7 +183,7 @@ class HelpScreen extends StatelessWidget {
             ),
           ),
           _Section(
-            title: '6. La regla del cloro',
+            title: '7. La regla del cloro',
             subtitle: 'El tipo de análisis con código CLORO se comporta '
                 'distinto al resto.',
             child: Column(
@@ -180,7 +214,7 @@ class HelpScreen extends StatelessWidget {
             ),
           ),
           _Section(
-            title: '7. Consultá el historial',
+            title: '8. Consultá el historial',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -206,7 +240,7 @@ class HelpScreen extends StatelessWidget {
             ),
           ),
           _Section(
-            title: '8. Revisá las alertas',
+            title: '9. Revisá las alertas',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -227,13 +261,13 @@ class HelpScreen extends StatelessWidget {
                 _Bullet(
                   icon: Icons.warning_amber,
                   text: 'No hay ninguna que se genere sola: las que ves las '
-                      'cargó el script de datos de prueba (sección 9).',
+                      'cargó el script de datos de prueba (sección 10).',
                 ),
               ],
             ),
           ),
           _Section(
-            title: '9. Volvé a los datos de prueba',
+            title: '10. Volvé a los datos de prueba',
             subtitle: 'Si ensuciaste los datos probando, este comando los '
                 'deja como estaban al principio:',
             child: Column(
@@ -279,14 +313,11 @@ class HelpScreen extends StatelessWidget {
                       'las muestras del tenant de una.',
                 ),
                 _Bullet(
-                  icon: Icons.logout,
-                  text: 'No hay botón de cerrar sesión en la app.',
-                ),
-                _Bullet(
-                  icon: Icons.link_off,
-                  text: 'Los botones "Usuarios" y el de persona (cuenta) del '
-                      'Home apuntan a rutas que todavía no están '
-                      'registradas, así que no abren.',
+                  icon: Icons.person_off,
+                  text: 'El botón "Usuarios" en Administración apunta a una '
+                      'ruta que todavía no está registrada, así que no abre. '
+                      'El menú de persona (avatar) SÍ tiene "Cerrar sesión" '
+                      'y funciona.',
                 ),
                 _Bullet(
                   icon: Icons.dashboard_customize_outlined,

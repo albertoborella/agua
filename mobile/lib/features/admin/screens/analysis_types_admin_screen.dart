@@ -1,7 +1,8 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/models/models.dart';
-import '../../../shared/services/api_service.dart';
 import '../../auth/providers/auth_provider.dart';
 
 class AnalysisTypesAdminScreen extends StatefulWidget {
@@ -90,15 +91,14 @@ class _AnalysisTypesAdminScreenState extends State<AnalysisTypesAdminScreen> {
           .replaceAll(RegExp(r'[^A-Z0-9]'), '')
           .substring(0, min(10, nombre.length));
 
-      AnalysisType newType;
       if (existing == null) {
-        newType = await api.createAnalysisType(
+        await api.createAnalysisType(
           codigo,
           nombre,
           requiereDescripcion: true,
         );
       } else {
-        newType = await api.updateAnalysisType(
+        await api.updateAnalysisType(
           existing.id,
           nombre,
           requiereDescripcion: true,

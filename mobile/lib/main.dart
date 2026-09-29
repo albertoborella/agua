@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 
 import 'core/config/env_config.dart';
 import 'core/theme/app_theme.dart';
+import 'features/admin/screens/analysis_types_admin_screen.dart';
+import 'features/admin/screens/sampling_frequencies_admin_screen.dart';
+import 'features/admin/screens/water_sources_admin_screen.dart';
 import 'features/alerts/screens/alerts_screen.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/screens/login_screen.dart';
@@ -59,6 +62,9 @@ class AguaApp extends StatelessWidget {
         '/history': (context) => const HistoryScreen(),
         '/alerts': (context) => const AlertsScreen(),
         '/help': (context) => const HelpScreen(),
+        '/admin/analysis-types': (context) => const AnalysisTypesAdminScreen(),
+        '/admin/water-sources': (context) => const WaterSourcesAdminScreen(),
+        '/admin/sampling-frequencies': (context) => const SamplingFrequenciesAdminScreen(),
         // TODO: add remaining routes
       },
     );

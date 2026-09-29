@@ -67,3 +67,15 @@ Perfecto, hace unos dias que no estoy en este proyecto. Por donde me aconsejas s
 Mirá, despues de todo el trabajo reciente, cerré los contenedores, volví a correrlos pero no me muestra nada la pantalla, cuando anteriormente me mostraba un login
 
 Ok, ahora está funcionando, me tendrías que ir haciendo un instructivo de funcionamiento del sistema, y que se acceda al mismo a traves de un icono de información en el navbar, y de paso me sirve para ir probando el sistema. Incluso colocar un id de empresa de prueba, un usuario de prueba y una contraseña de prueba. Tambien desearía que si tienes que modificar las docs con las modificaciones de hoy que también lo hagas, y por ultimo hacer un commit y pusheo al repositorio.
+
+Hola, ayer dejamos funcionando el sistema luego de haber vuelto al último commit, ya que se habían dejado de levantar los contenedores. Quisieras que analices la ultima respuesta de ayer donde me sugerias 3 puntos para ir modificando de a uno y no todos juntos para evitar inconvenientes. Me pasarias nuevamente es ultima sugerencia que me dejaste.
+
+Si, quisiera que vayamos dando funcionalidad, empecemos por el Tipo de Análisis(CRUD + pantalla admin), si estás de acuerdo.
+
+Probemos entrar a la web y validar la UI, ya que yo cerre la sesion, volví a loguearme pero el boton de Tipo de Análisis no me funciona aún.
+
+Perfecto, ahora hay que darle funcionalidad(CRUD + pantalla admin) de Fuentes de Agua
+
+Perfecto, sigamos por la funcionalidad de Frecuencia de Muestreo.
+
+Con la funcionalidad a los 3 ultimis botones, deberíamos incorporar lo correspondiente al instructivo de la aplicacion. Una vez realizado eso hacé un commit y pusheo al repositorio.

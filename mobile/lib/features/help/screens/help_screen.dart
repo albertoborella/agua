@@ -302,7 +302,7 @@ class HelpScreen extends StatelessWidget {
                 _CredentialsRow(rol: 'ADMIN', usuario: 'admin', password: 'Admin123!'),
                 _CredentialsRow(rol: 'OPERARIO', usuario: 'operario', password: 'Operario123!'),
                 _CredentialsRow(rol: 'LABORATORISTA', usuario: 'lab', password: 'Lab123!'),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 _Bullet(
                   icon: Icons.business_outlined,
                   text: 'ID de Empresa: demo',

@@ -87,7 +87,7 @@ def take_scheduled_sample(
         if not source or not source.activa:
             raise HTTPException(status_code=404, detail="Fuente no encontrada o inactiva")
         
-        # Create sample with today's date/time
+        # Create sample with today's date/time, linking to the frequency
         svc = SampleService(session)
         now = datetime.now(timezone.utc)
         sample = svc.repo.create({
@@ -95,6 +95,7 @@ def take_scheduled_sample(
             "fuente_id": data.fuente_id,
             "tipo_analisis_id": data.tipo_analisis_id,
             "operario_id": user_id,
+            "frecuencia_id": data.frecuencia_id,
             "fecha": now.strftime("%Y-%m-%d"),
             "hora": now.strftime("%H:%M:%S"),
         })
@@ -171,6 +172,9 @@ def get_sample_counts(
     - realizadas: total samples in history
     - pendientes: scheduled samples not yet done, due within 15 days (including today)
     - vencidas: scheduled samples not yet done, overdue by more than 15 days
+    
+    Logic: Each frequency generates expected dates. A sample with frecuencia_id
+    covers ONE expected date (the earliest unmatched). Count done = samples with that frecuencia_id.
     """
     tenant_id = payload["tenant"]
     engine = get_tenant_engine(tenant_id)
@@ -184,7 +188,7 @@ def get_sample_counts(
             select(SampleRecord).where(SampleRecord.tenant_id == tenant_id)
         ).all())
         
-        # Get active frequencies with joins for source and analysis type info
+        # Get active frequencies with joins
         frequencies = session.exec(
             select(SamplingFrequency)
             .join(WaterSource, SamplingFrequency.fuente_id == WaterSource.id)
@@ -195,16 +199,16 @@ def get_sample_counts(
             )
         ).all()
         
-        # Get all existing samples for quick lookup
+        # Get all existing samples grouped by frecuencia_id
         existing_samples = session.exec(
             select(SampleRecord).where(SampleRecord.tenant_id == tenant_id)
         ).all()
         
-        # Build a set of (fuente_id, tipo_analisis_id, fecha) for quick lookup
-        done_samples = set()
+        # Count samples per frecuencia_id
+        samples_per_freq: dict[str, int] = {}
         for s in existing_samples:
-            key = (s.fuente_id, s.tipo_analisis_id, s.fecha)
-            done_samples.add(key)
+            if s.frecuencia_id:
+                samples_per_freq[s.frecuencia_id] = samples_per_freq.get(s.frecuencia_id, 0) + 1
         
         pendientes = 0
         vencidas = 0
@@ -212,12 +216,19 @@ def get_sample_counts(
         for freq in frequencies:
             # Calculate expected samples based on frequency
             expected_dates = _get_expected_dates(freq, cutoff_pending)
+            
+            # How many samples have been taken for this frequency
+            done_count = samples_per_freq.get(freq.id, 0)
+            
             for expected_date in expected_dates:
                 if expected_date > cutoff_pending:
                     continue  # Beyond 15 days - not counted yet
-                key = (freq.fuente_id, freq.tipo_analisis_id, expected_date.strftime("%Y-%m-%d"))
-                if key in done_samples:
-                    continue  # Already done
+                
+                # Each sample covers one expected date (earliest unmatched first)
+                if done_count > 0:
+                    done_count -= 1
+                    continue  # This expected date is already done
+                
                 if expected_date > today:
                     # Future date within 15 days = PENDIENTE
                     pendientes += 1
@@ -248,6 +259,7 @@ def _get_scheduled_samples(
 ) -> list[ScheduledSampleResponse]:
     """
     Get scheduled samples (pending or overdue) with full details.
+    Uses frecuencia_id to track which expected dates are already done.
     """
     now = datetime.now(timezone.utc)
     today = now.date()
@@ -272,15 +284,16 @@ def _get_scheduled_samples(
         # Build a dict for quick lookup
         analysis_type_map = {at.id: at for at in analysis_types}
     
-    # Get all existing samples for quick lookup
+    # Get all existing samples for this tenant, grouped by frecuencia_id
     existing_samples = session.exec(
         select(SampleRecord).where(SampleRecord.tenant_id == tenant_id)
     ).all()
     
-    done_samples = set()
+    # Count samples per frecuencia_id
+    samples_per_freq: dict[str, int] = {}
     for s in existing_samples:
-        key = (s.fuente_id, s.tipo_analisis_id, s.fecha)
-        done_samples.add(key)
+        if s.frecuencia_id:
+            samples_per_freq[s.frecuencia_id] = samples_per_freq.get(s.frecuencia_id, 0) + 1
     
     results = []
     
@@ -289,12 +302,17 @@ def _get_scheduled_samples(
         if not analysis_type:
             continue  # Skip if analysis type not found
         
+        # How many samples have been taken for this frequency
+        done_count = samples_per_freq.get(freq.id, 0)
+        
         expected_dates = _get_expected_dates(freq, cutoff_pending)
         for expected_date in expected_dates:
             if expected_date > cutoff_pending:
                 continue
-            key = (freq.fuente_id, freq.tipo_analisis_id, expected_date.strftime("%Y-%m-%d"))
-            if key in done_samples:
+            
+            # Each sample covers one expected date (earliest unmatched first)
+            if done_count > 0:
+                done_count -= 1
                 continue
             
             if expected_date > today:

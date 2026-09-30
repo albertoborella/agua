@@ -150,14 +150,14 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Summary cards
+              // Summary cards - tap to navigate to pendientes/vencidas
               _buildSummaryCard(
                 context,
                 title: 'Pendientes',
                 count: _counts['pendientes'] ?? 0,
                 icon: Icons.pending_actions,
                 color: Colors.orange,
-                onTap: () => Navigator.pushNamed(context, '/history'),
+                onTap: () => Navigator.pushNamed(context, '/pendientes'),
               ),
               const SizedBox(height: 12),
               _buildSummaryCard(
@@ -175,7 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 count: _counts['vencidas'] ?? 0,
                 icon: Icons.warning_amber,
                 color: Colors.red,
-                onTap: () => Navigator.pushNamed(context, '/history'),
+                onTap: () => Navigator.pushNamed(context, '/vencidas'),
               ),
               const SizedBox(height: 32),
 
@@ -190,12 +190,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPressed: () => Navigator.pushNamed(context, '/history'),
                 icon: const Icon(Icons.history),
                 label: const Text('Ver Historial'),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () => Navigator.pushNamed(context, '/alerts'),
-                icon: const Icon(Icons.notifications),
-                label: const Text('Alertas'),
               ),
 
               // Admin section

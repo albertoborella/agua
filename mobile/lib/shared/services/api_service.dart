@@ -547,6 +547,47 @@ class ApiService {
     }
   }
 
+  // Scheduled samples (pendientes/vencidas)
+  Future<List<ScheduledSample>> getPendingSamples() async {
+    final response = await _get('/samples/pending');
+
+    if (response.statusCode == 200) {
+      final List data = json.decode(response.body);
+      return data.map((json) => ScheduledSample.fromJson(json)).toList();
+    } else {
+      throw Exception('Error al obtener muestras pendientes');
+    }
+  }
+
+  Future<List<ScheduledSample>> getOverdueSamples() async {
+    final response = await _get('/samples/overdue');
+
+    if (response.statusCode == 200) {
+      final List data = json.decode(response.body);
+      return data.map((json) => ScheduledSample.fromJson(json)).toList();
+    } else {
+      throw Exception('Error al obtener muestras vencidas');
+    }
+  }
+
+  Future<SampleRecord> takeScheduledSample({
+    required String frecuenciaId,
+    required String fuenteId,
+    required String tipoAnalisisId,
+  }) async {
+    final response = await _post('/samples/take-scheduled', json.encode({
+      'frecuencia_id': frecuenciaId,
+      'fuente_id': fuenteId,
+      'tipo_analisis_id': tipoAnalisisId,
+    }));
+
+    if (response.statusCode == 200) {
+      return SampleRecord.fromJson(json.decode(response.body));
+    } else {
+      throw Exception('Error al tomar muestra programada');
+    }
+  }
+
   // Alerts
   Future<List<Alert>> getPendingAlerts() async {
     final response = await _get('/alerts/pending');

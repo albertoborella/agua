@@ -104,3 +104,59 @@ class SamplingFrequency {
         createdAt: json['created_at'],
       );
 }
+
+/// A scheduled sample that is pending or overdue.
+/// Returned by `GET /samples/pending` and `GET /samples/overdue`.
+class ScheduledSample {
+  final String frecuenciaId;
+  final String fuenteId;
+  final String fuenteNombre;
+  final String fuenteTipo;
+  final String tipoAnalisisId;
+  final String tipoAnalisisNombre;
+  final String tipoAnalisisCodigo;
+  final DateTime fechaProgramada;
+  final int diasDesdeProgramada; // negative = days until due, positive = days overdue
+  final String estado; // "PENDIENTE" or "VENCIDA"
+
+  ScheduledSample({
+    required this.frecuenciaId,
+    required this.fuenteId,
+    required this.fuenteNombre,
+    required this.fuenteTipo,
+    required this.tipoAnalisisId,
+    required this.tipoAnalisisNombre,
+    required this.tipoAnalisisCodigo,
+    required this.fechaProgramada,
+    required this.diasDesdeProgramada,
+    required this.estado,
+  });
+
+  factory ScheduledSample.fromJson(Map<String, dynamic> json) => ScheduledSample(
+        frecuenciaId: json['frecuencia_id'],
+        fuenteId: json['fuente_id'],
+        fuenteNombre: json['fuente_nombre'],
+        fuenteTipo: json['fuente_tipo'],
+        tipoAnalisisId: json['tipo_analisis_id'],
+        tipoAnalisisNombre: json['tipo_analisis_nombre'],
+        tipoAnalisisCodigo: json['tipo_analisis_codigo'],
+        fechaProgramada: DateTime.parse(json['fecha_programada']),
+        diasDesdeProgramada: json['dias_desde_programada'] as int,
+        estado: json['estado'],
+      );
+
+  bool get isPendiente => estado == 'PENDIENTE';
+  bool get isVencida => estado == 'VENCIDA';
+  bool get isCloro => tipoAnalisisCodigo == 'CLORO';
+
+  /// Returns a human-readable string for the due status
+  String get estadoTexto {
+    if (diasDesdeProgramada < 0) {
+      return 'En ${-diasDesdeProgramada} día${-diasDesdeProgramada != 1 ? 's' : ''}';
+    } else if (diasDesdeProgramada == 0) {
+      return 'Hoy';
+    } else {
+      return 'Hace $diasDesdeProgramada día${diasDesdeProgramada != 1 ? 's' : ''}';
+    }
+  }
+}

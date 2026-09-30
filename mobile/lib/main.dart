@@ -14,6 +14,8 @@ import 'features/help/screens/help_screen.dart';
 import 'features/home/screens/home_screen.dart';
 import 'features/samples/screens/history_screen.dart';
 import 'features/samples/screens/new_sample_screen.dart';
+import 'features/samples/screens/pendientes_screen.dart';
+import 'features/samples/screens/vencidas_screen.dart';
 import 'features/settings/screens/settings_screen.dart';
 import 'shared/services/api_service.dart';
 
@@ -62,6 +64,8 @@ class AguaApp extends StatelessWidget {
         '/new-sample': (context) => const NewSampleScreen(),
         '/history': (context) => const HistoryScreen(),
         '/alerts': (context) => const AlertsScreen(),
+        '/pendientes': (context) => const PendientesScreen(),
+        '/vencidas': (context) => const VencidasScreen(),
         '/help': (context) => const HelpScreen(),
         '/admin/analysis-types': (context) => const AnalysisTypesAdminScreen(),
         '/admin/users': (context) => const UsersAdminScreen(),

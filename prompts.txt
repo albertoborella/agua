@@ -83,3 +83,7 @@ Con la funcionalidad a los 3 ultimis botones, deberíamos incorporar lo correspo
 Bien, ahora creo que nos quedaria que pudieramos hacer el CRUD de usuarios, con los roles de Admin, Operario y Laboratorista.
 
 El boton Usuarios sigue sin funcionar
+
+Perfecto, parece que todo está andando en esta v1 de la aplicación. Quisiera que el instructivo que fuimos armando como para ir probando los distintos pasos, ahora lo cambies por un instructivo de funcionamiento en base a los objetivos de la app. O sea que un usuario nuevo del sistema pueda leerlo e interprete su forma de uso facilmente. Le dejaría que el id de la empresa sea demo para ver su funcionamiento, pero luego si ese usuario adquiere el sistema, pueda modificarlo o agregar el ID de Empresa real.
+
+Mirá, no me di cuenta que al querer loguearme con lab y Lab123! o bien operario y Operario123! me sale un alert de Credenciales Inválidas

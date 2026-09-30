@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import init_global_db
-from app.routers import admin, alerts, auth, catalog, samples
+from app.routers import admin, alerts, auth, catalog, lab, samples
 
 
 @asynccontextmanager
@@ -37,6 +37,7 @@ app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(catalog.router)
 app.include_router(samples.router)
+app.include_router(lab.router)
 app.include_router(alerts.router)
 
 

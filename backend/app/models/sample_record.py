@@ -20,3 +20,15 @@ class SampleRecord(SQLModel, table=True):
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
+    # Lab analysis fields
+    estado_analisis: str = Field(default="PENDIENTE", index=True)  # PENDIENTE, ANALIZADO
+    analizado_por_id: Optional[str] = Field(default=None, foreign_key="users.id", index=True)
+    fecha_analisis: Optional[str] = Field(default=None)  # YYYY-MM-DD
+    # Chlorine analysis (CLORO): numeric value with 1-2 decimals
+    cloro_nivel: Optional[float] = Field(default=None)
+    # MB, FQ, OTRO: "APTA" or "NO_APTA"
+    resultado: Optional[str] = Field(default=None)
+    # Protocol number for non-chlorine analyses
+    protocolo_numero: Optional[str] = Field(default=None)
+    # Optional description for OTRO type
+    descripcion: Optional[str] = Field(default=None)

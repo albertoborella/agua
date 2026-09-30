@@ -4,6 +4,7 @@ import '../models/user.dart';
 import '../models/plant.dart';
 import '../models/models.dart';
 import '../models/sample.dart';
+import '../models/lab_sample.dart';
 
 class ApiService {
   final String baseUrl;
@@ -607,6 +608,74 @@ class ApiService {
       return Alert.fromJson(json.decode(response.body));
     } else {
       throw Exception('Error al marcar alerta');
+    }
+  }
+
+  // Lab
+  Future<LabSampleCounts> getLabCounts() async {
+    final response = await _get('/lab/counts');
+
+    if (response.statusCode == 200) {
+      return LabSampleCounts.fromJson(json.decode(response.body));
+    } else {
+      throw Exception('Error al obtener conteos del laboratorio');
+    }
+  }
+
+  Future<List<LabSample>> getLabSamples({
+    String? estadoAnalisis,
+    String? tipoAnalisisCodigo,
+  }) async {
+    final queryParams = <String, String>{};
+    if (estadoAnalisis != null) queryParams['estado_analisis'] = estadoAnalisis;
+    if (tipoAnalisisCodigo != null) queryParams['tipo_analisis_codigo'] = tipoAnalisisCodigo;
+
+    final response = await _get('/lab/samples', query: queryParams);
+
+    if (response.statusCode == 200) {
+      final List data = json.decode(response.body);
+      return data.map((json) => LabSample.fromJson(json)).toList();
+    } else {
+      throw Exception('Error al obtener muestras del laboratorio');
+    }
+  }
+
+  Future<LabSample> submitCloroAnalysis(String sampleId, double cloroNivel) async {
+    final response = await _post(
+      '/lab/samples/$sampleId/analyze/cloro',
+      json.encode({'cloro_nivel': cloroNivel}),
+    );
+
+    if (response.statusCode == 200) {
+      return LabSample.fromJson(json.decode(response.body));
+    } else {
+      throw Exception(_errorDetail(response) ?? 'Error al enviar análisis de cloro');
+    }
+  }
+
+  Future<LabSample> submitGeneralAnalysis(
+    String sampleId, {
+    required String resultado,
+    required String protocoloNumero,
+    String? descripcion,
+  }) async {
+    final body = <String, dynamic>{
+      'resultado': resultado,
+      'protocolo_numero': protocoloNumero,
+    };
+    if (descripcion != null && descripcion.isNotEmpty) {
+      body['descripcion'] = descripcion;
+    }
+
+    final response = await _post(
+      '/lab/samples/$sampleId/analyze/general',
+      json.encode(body),
+    );
+
+    if (response.statusCode == 200) {
+      return LabSample.fromJson(json.decode(response.body));
+    } else {
+      throw Exception(_errorDetail(response) ?? 'Error al enviar análisis');
     }
   }
 }

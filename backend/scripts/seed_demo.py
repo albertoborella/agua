@@ -170,6 +170,7 @@ def seed_tenant(tenant_id: str, reset: bool) -> str | None:
         # chlorine appears multiple times per day on the same source.
         sample_repo = BaseRepository(SampleRecord, session)
         operario_id = user_ids["operario"]
+        lab_id = user_ids["lab"]
         today = datetime.now(timezone.utc).date()
         sample_count = 0
         for days_ago in range(6, -1, -1):
@@ -177,40 +178,121 @@ def seed_tenant(tenant_id: str, reset: bool) -> str | None:
             # Two chlorine rounds per grifo, plus one weekly physico-chemical.
             for hour, minute in [(6, 15), (14, 40)]:
                 for nombre in source_names:
-                    sample_repo.create(
-                        {
-                            "tenant_id": tenant_id,
-                            "fuente_id": source_ids[nombre],
-                            "tipo_analisis_id": "at-cloro",
-                            "operario_id": operario_id,
-                            "fecha": day.isoformat(),
-                            "hora": f"{hour:02d}:{minute:02d}:00",
-                            "sincronizada": True,
-                            "created_at": datetime.combine(
-                                day, datetime.min.time(), tzinfo=timezone.utc
-                            )
-                            .replace(hour=hour, minute=minute)
-                            .isoformat(),
-                        }
-                    )
-                    sample_count += 1
-            if days_ago % 2 == 0:
-                sample_repo.create(
-                    {
+                    # Alternate between analyzed and pending for demo
+                    is_analyzed = (days_ago % 2 == 0)
+                    sample_data = {
                         "tenant_id": tenant_id,
-                        "fuente_id": source_ids["Pozo Norte"],
-                        "tipo_analisis_id": "at-fq",
+                        "fuente_id": source_ids[nombre],
+                        "tipo_analisis_id": "at-cloro",
                         "operario_id": operario_id,
                         "fecha": day.isoformat(),
-                        "hora": "09:20:00",
+                        "hora": f"{hour:02d}:{minute:02d}:00",
                         "sincronizada": True,
                         "created_at": datetime.combine(
                             day, datetime.min.time(), tzinfo=timezone.utc
                         )
-                        .replace(hour=9, minute=20)
+                        .replace(hour=hour, minute=minute)
                         .isoformat(),
                     }
-                )
+                    if is_analyzed:
+                        sample_data.update({
+                            "estado_analisis": "ANALIZADO",
+                            "analizado_por_id": lab_id,
+                            "fecha_analisis": day.isoformat(),
+                            "cloro_nivel": round(0.5 + (hash(f"{day}{nombre}{hour}") % 100) / 100, 2),
+                        })
+                    sample_repo.create(sample_data)
+                    sample_count += 1
+            if days_ago % 2 == 0:
+                is_analyzed = (days_ago % 3 == 0)
+                sample_data = {
+                    "tenant_id": tenant_id,
+                    "fuente_id": source_ids["Pozo Norte"],
+                    "tipo_analisis_id": "at-fq",
+                    "operario_id": operario_id,
+                    "fecha": day.isoformat(),
+                    "hora": "09:20:00",
+                    "sincronizada": True,
+                    "created_at": datetime.combine(
+                        day, datetime.min.time(), tzinfo=timezone.utc
+                    )
+                    .replace(hour=9, minute=20)
+                    .isoformat(),
+                }
+                if is_analyzed:
+                    sample_data.update({
+                        "estado_analisis": "ANALIZADO",
+                        "analizado_por_id": lab_id,
+                        "fecha_analisis": day.isoformat(),
+                        "resultado": "APTA",
+                        "protocolo_numero": f"PROT-FQ-{day.strftime('%Y%m%d')}-001",
+                    })
+                sample_repo.create(sample_data)
+                sample_count += 1
+            # Add MB samples (monthly, so only on day 0 and day 30, but we only go back 7 days)
+            if days_ago == 0:
+                is_analyzed = True
+                sample_data = {
+                    "tenant_id": tenant_id,
+                    "fuente_id": source_ids["Pozo Sur"],
+                    "tipo_analisis_id": "at-mb",
+                    "operario_id": operario_id,
+                    "fecha": day.isoformat(),
+                    "hora": "10:15:00",
+                    "sincronizada": True,
+                    "created_at": datetime.combine(
+                        day, datetime.min.time(), tzinfo=timezone.utc
+                    )
+                    .replace(hour=10, minute=15)
+                    .isoformat(),
+                }
+                if is_analyzed:
+                    sample_data.update({
+                        "estado_analisis": "ANALIZADO",
+                        "analizado_por_id": lab_id,
+                        "fecha_analisis": day.isoformat(),
+                        "resultado": "APTA",
+                        "protocolo_numero": f"PROT-MB-{day.strftime('%Y%m%d')}-001",
+                    })
+                sample_repo.create(sample_data)
+                sample_count += 1
+            # Add a pending MB sample for demo (taken today but not analyzed)
+            if days_ago == 0:
+                sample_data = {
+                    "tenant_id": tenant_id,
+                    "fuente_id": source_ids["Grifo Bebedero"],
+                    "tipo_analisis_id": "at-mb",
+                    "operario_id": operario_id,
+                    "fecha": day.isoformat(),
+                    "hora": "11:00:00",
+                    "sincronizada": True,
+                    "created_at": datetime.combine(
+                        day, datetime.min.time(), tzinfo=timezone.utc
+                    )
+                    .replace(hour=11, minute=0)
+                    .isoformat(),
+                    "estado_analisis": "PENDIENTE",
+                }
+                sample_repo.create(sample_data)
+                sample_count += 1
+            # Add a pending OTRO sample for demo
+            if days_ago == 1:
+                sample_data = {
+                    "tenant_id": tenant_id,
+                    "fuente_id": source_ids["Grifo Cocina"],
+                    "tipo_analisis_id": "at-otro",
+                    "operario_id": operario_id,
+                    "fecha": day.isoformat(),
+                    "hora": "08:30:00",
+                    "sincronizada": True,
+                    "created_at": datetime.combine(
+                        day, datetime.min.time(), tzinfo=timezone.utc
+                    )
+                    .replace(hour=8, minute=30)
+                    .isoformat(),
+                    "estado_analisis": "PENDIENTE",
+                }
+                sample_repo.create(sample_data)
                 sample_count += 1
         print(f"  sample_records: {sample_count} creados (ultimos 7 dias)")
 

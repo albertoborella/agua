@@ -12,6 +12,7 @@ import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/help/screens/help_screen.dart';
 import 'features/home/screens/home_screen.dart';
+import 'features/samples/providers/samples_provider.dart';
 import 'features/samples/screens/history_screen.dart';
 import 'features/samples/screens/new_sample_screen.dart';
 import 'features/samples/screens/pendientes_screen.dart';
@@ -31,11 +32,17 @@ Future<void> main() async {
   // session on every page reload.
   await auth.init();
 
+  // Create samples provider with the same API instance
+  final samples = SamplesProvider(api: api);
+
   // `.value` because the provider already exists: creating it here would build
   // a second AuthProvider with an empty session.
   runApp(
-    ChangeNotifierProvider<AuthProvider>.value(
-      value: auth,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AuthProvider>.value(value: auth),
+        ChangeNotifierProvider<SamplesProvider>.value(value: samples),
+      ],
       child: const AguaApp(),
     ),
   );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/models/models.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../providers/samples_provider.dart';
 
 class VencidasScreen extends StatefulWidget {
   const VencidasScreen({super.key});
@@ -11,36 +12,12 @@ class VencidasScreen extends StatefulWidget {
 }
 
 class _VencidasScreenState extends State<VencidasScreen> {
-  List<ScheduledSample> _vencidas = [];
-  bool _isLoading = true;
-  String? _error;
-
   @override
   void initState() {
     super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<SamplesProvider>().loadVencidas();
     });
-    try {
-      final api = context.read<AuthProvider>().api;
-      final vencidas = await api.getOverdueSamples();
-      if (!mounted) return;
-      setState(() {
-        _vencidas = vencidas;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
-        _isLoading = false;
-      });
-    }
   }
 
   Future<void> _tomarMuestra(ScheduledSample muestra) async {
@@ -52,7 +29,8 @@ class _VencidasScreenState extends State<VencidasScreen> {
         tipoAnalisisId: muestra.tipoAnalisisId,
       );
       if (!mounted) return;
-      await _load();
+      // Refresh all data in provider (will notify all listeners)
+      await context.read<SamplesProvider>().onSampleTaken();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Muestra de ${muestra.fuenteNombre} tomada correctamente')),
@@ -77,20 +55,25 @@ class _VencidasScreenState extends State<VencidasScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<SamplesProvider>();
+    final vencidas = provider.vencidas;
+    final isLoading = provider.isLoadingVencidas;
+    final error = provider.error;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Muestras Vencidas'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _load,
+            onPressed: provider.loadVencidas,
             tooltip: 'Actualizar',
           ),
         ],
       ),
-      body: _isLoading
+      body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _error != null
+          : error != null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -101,16 +84,16 @@ class _VencidasScreenState extends State<VencidasScreen> {
                         color: Theme.of(context).colorScheme.error,
                       ),
                       const SizedBox(height: 16),
-                      Text(_error!),
+                      Text(error!),
                       const SizedBox(height: 16),
                       FilledButton(
-                        onPressed: _load,
+                        onPressed: provider.loadVencidas,
                         child: const Text('Reintentar'),
                       ),
                     ],
                   ),
                 )
-              : _vencidas.isEmpty
+              : vencidas.isEmpty
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -128,12 +111,12 @@ class _VencidasScreenState extends State<VencidasScreen> {
                       ),
                     )
                   : RefreshIndicator(
-                      onRefresh: _load,
+                      onRefresh: provider.loadVencidas,
                       child: ListView.separated(
-                        itemCount: _vencidas.length,
+                        itemCount: vencidas.length,
                         separatorBuilder: (_, __) => const Divider(height: 1),
                         itemBuilder: (context, index) {
-                          final muestra = _vencidas[index];
+                          final muestra = vencidas[index];
                           final tipoIcon = _getTipoIcon(muestra.tipoAnalisisCodigo);
 
                           return Dismissible(

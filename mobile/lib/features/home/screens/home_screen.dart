@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../samples/providers/samples_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,30 +11,17 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  Map<String, int> _counts = {'realizadas': 0, 'pendientes': 0, 'vencidas': 0};
-
   @override
   void initState() {
     super.initState();
-    _loadCounts();
-  }
-
-  Future<void> _loadCounts() async {
-    try {
-      final api = context.read<AuthProvider>().api;
-      final counts = await api.getSampleCounts();
-      if (mounted) {
-        setState(() {
-          _counts = counts;
-        });
-      }
-    } catch (e) {
-      // Silently fail, show 0s
-    }
+    // Load counts when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<SamplesProvider>().loadCounts();
+    });
   }
 
   Future<void> _refresh() async {
-    await _loadCounts();
+    await context.read<SamplesProvider>().loadCounts();
   }
 
   Future<void> _logout(BuildContext context) async {
@@ -47,7 +35,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final samples = context.watch<SamplesProvider>();
     final user = auth.user;
+    final counts = samples.counts;
 
     return Scaffold(
       appBar: AppBar(
@@ -154,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildSummaryCard(
                 context,
                 title: 'Pendientes',
-                count: _counts['pendientes'] ?? 0,
+                count: counts['pendientes'] ?? 0,
                 icon: Icons.pending_actions,
                 color: Colors.orange,
                 onTap: () => Navigator.pushNamed(context, '/pendientes'),
@@ -163,7 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildSummaryCard(
                 context,
                 title: 'Realizadas',
-                count: _counts['realizadas'] ?? 0,
+                count: counts['realizadas'] ?? 0,
                 icon: Icons.check_circle_outline,
                 color: Colors.green,
                 onTap: () => Navigator.pushNamed(context, '/history'),
@@ -172,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildSummaryCard(
                 context,
                 title: 'Vencidas',
-                count: _counts['vencidas'] ?? 0,
+                count: counts['vencidas'] ?? 0,
                 icon: Icons.warning_amber,
                 color: Colors.red,
                 onTap: () => Navigator.pushNamed(context, '/vencidas'),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/models/models.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../providers/samples_provider.dart';
 
 class PendientesScreen extends StatefulWidget {
   const PendientesScreen({super.key});
@@ -11,36 +12,12 @@ class PendientesScreen extends StatefulWidget {
 }
 
 class _PendientesScreenState extends State<PendientesScreen> {
-  List<ScheduledSample> _pendientes = [];
-  bool _isLoading = true;
-  String? _error;
-
   @override
   void initState() {
     super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<SamplesProvider>().loadPendientes();
     });
-    try {
-      final api = context.read<AuthProvider>().api;
-      final pendientes = await api.getPendingSamples();
-      if (!mounted) return;
-      setState(() {
-        _pendientes = pendientes;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
-        _isLoading = false;
-      });
-    }
   }
 
   Future<void> _tomarMuestra(ScheduledSample muestra) async {
@@ -52,7 +29,8 @@ class _PendientesScreenState extends State<PendientesScreen> {
         tipoAnalisisId: muestra.tipoAnalisisId,
       );
       if (!mounted) return;
-      await _load();
+      // Refresh all data in provider (will notify all listeners)
+      await context.read<SamplesProvider>().onSampleTaken();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Muestra de ${muestra.fuenteNombre} tomada correctamente')),
@@ -87,20 +65,25 @@ class _PendientesScreenState extends State<PendientesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<SamplesProvider>();
+    final pendientes = provider.pendientes;
+    final isLoading = provider.isLoadingPendientes;
+    final error = provider.error;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Muestras Pendientes'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _load,
+            onPressed: provider.loadPendientes,
             tooltip: 'Actualizar',
           ),
         ],
       ),
-      body: _isLoading
+      body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _error != null
+          : error != null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -111,16 +94,16 @@ class _PendientesScreenState extends State<PendientesScreen> {
                         color: Theme.of(context).colorScheme.error,
                       ),
                       const SizedBox(height: 16),
-                      Text(_error!),
+                      Text(error!),
                       const SizedBox(height: 16),
                       FilledButton(
-                        onPressed: _load,
+                        onPressed: provider.loadPendientes,
                         child: const Text('Reintentar'),
                       ),
                     ],
                   ),
                 )
-              : _pendientes.isEmpty
+              : pendientes.isEmpty
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -138,12 +121,12 @@ class _PendientesScreenState extends State<PendientesScreen> {
                       ),
                     )
                   : RefreshIndicator(
-                      onRefresh: _load,
+                      onRefresh: provider.loadPendientes,
                       child: ListView.separated(
-                        itemCount: _pendientes.length,
+                        itemCount: pendientes.length,
                         separatorBuilder: (_, __) => const Divider(height: 1),
                         itemBuilder: (context, index) {
-                          final muestra = _pendientes[index];
+                          final muestra = pendientes[index];
                           final estadoColor = _getEstadoColor(muestra);
                           final tipoIcon = _getTipoIcon(muestra.tipoAnalisisCodigo);
 

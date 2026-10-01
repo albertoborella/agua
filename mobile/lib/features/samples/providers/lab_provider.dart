@@ -46,6 +46,9 @@ class LabProvider extends ChangeNotifier {
   Future<void> loadSamples({
     String? estadoAnalisis,
     String? tipoAnalisisCodigo,
+    String? fuenteId,
+    String? fechaDesde,
+    String? fechaHasta,
   }) async {
     _isLoadingSamples = true;
     _error = null;
@@ -55,6 +58,9 @@ class LabProvider extends ChangeNotifier {
       _samples = await _api.getLabSamples(
         estadoAnalisis: estadoAnalisis,
         tipoAnalisisCodigo: tipoAnalisisCodigo,
+        fuenteId: fuenteId,
+        fechaDesde: fechaDesde,
+        fechaHasta: fechaHasta,
       );
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');

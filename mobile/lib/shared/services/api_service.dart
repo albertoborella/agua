@@ -625,10 +625,16 @@ class ApiService {
   Future<List<LabSample>> getLabSamples({
     String? estadoAnalisis,
     String? tipoAnalisisCodigo,
+    String? fuenteId,
+    String? fechaDesde,
+    String? fechaHasta,
   }) async {
     final queryParams = <String, String>{};
     if (estadoAnalisis != null) queryParams['estado_analisis'] = estadoAnalisis;
     if (tipoAnalisisCodigo != null) queryParams['tipo_analisis_codigo'] = tipoAnalisisCodigo;
+    if (fuenteId != null) queryParams['fuente_id'] = fuenteId;
+    if (fechaDesde != null) queryParams['fecha_desde'] = fechaDesde;
+    if (fechaHasta != null) queryParams['fecha_hasta'] = fechaHasta;
 
     final response = await _get('/lab/samples', query: queryParams);
 

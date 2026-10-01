@@ -31,12 +31,16 @@ def require_laboratorista(payload: dict = Depends(get_current_user)):
 
 @router.get("/samples", response_model=list[LabSampleResponse])
 def get_lab_samples(
-    estado_analisis: str | None = Query(None, description="Filter by analysis state: PENDIENTE or ANALIZADO"),
-    tipo_analisis_codigo: str | None = Query(None, description="Filter by analysis type code"),
+    estado_analisis: str | None = Query("PENDIENTE", description="Filter by analysis state: PENDIENTE or ANALIZADO. Defaults to PENDIENTE"),
+    tipo_analisis_codigo: str | None = Query(None, description="Filter by analysis type code (CLORO, FQ, MB, OTRO)"),
+    fuente_id: str | None = Query(None, description="Filter by water source ID"),
+    fecha_desde: str | None = Query(None, description="Filter by sample date from (YYYY-MM-DD)"),
+    fecha_hasta: str | None = Query(None, description="Filter by sample date to (YYYY-MM-DD)"),
     payload: dict = Depends(require_laboratorista),
 ):
     """
-    Get all samples for the lab (taken by operarios) with their analysis status.
+    Get samples for the lab with their analysis status.
+    Defaults to PENDIENTE samples. For history (ANALIZADO), supports date range, type and source filters.
     Only accessible by LABORATORISTA role.
     """
     tenant_id = payload["tenant"]
@@ -45,8 +49,19 @@ def get_lab_samples(
         # Get all samples for this tenant
         query = select(SampleRecord).where(SampleRecord.tenant_id == tenant_id)
         
+        # Default to PENDIENTE if not specified
         if estado_analisis:
             query = query.where(SampleRecord.estado_analisis == estado_analisis)
+        
+        # Date range filters (apply to sample fecha field)
+        if fecha_desde:
+            query = query.where(SampleRecord.fecha >= fecha_desde)
+        if fecha_hasta:
+            query = query.where(SampleRecord.fecha <= fecha_hasta)
+        
+        # Source filter
+        if fuente_id:
+            query = query.where(SampleRecord.fuente_id == fuente_id)
         
         samples = session.exec(query).all()
         

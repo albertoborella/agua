@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/models/lab_sample.dart';
+import '../../../shared/models/models.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/lab_provider.dart';
 import 'lab_analysis_entry_screen.dart';
@@ -20,15 +21,43 @@ class LabSamplesScreen extends StatefulWidget {
 }
 
 class _LabSamplesScreenState extends State<LabSamplesScreen> {
+  // Filter state for history view
+  DateTime? _fechaDesde;
+  DateTime? _fechaHasta;
+  String? _selectedTipoAnalisisCodigo;
+  String? _selectedFuenteId;
+  List<WaterSource> _fuentes = [];
+  List<AnalysisType> _tiposAnalisis = [];
+  bool _isLoadingFilters = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadFilterData();
       context.read<LabProvider>().loadSamples(
         estadoAnalisis: widget.estadoAnalisis,
         tipoAnalisisCodigo: widget.tipoAnalisisCodigo,
       );
     });
+  }
+
+  Future<void> _loadFilterData() async {
+    setState(() => _isLoadingFilters = true);
+    try {
+      final api = context.read<AuthProvider>().api;
+      final fuentes = await api.getSources();
+      final tipos = await api.getAnalysisTypes();
+      if (mounted) {
+        setState(() {
+          _fuentes = fuentes;
+          _tiposAnalisis = tipos;
+          _isLoadingFilters = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingFilters = false);
+    }
   }
 
   String _getTitle() {
@@ -47,10 +76,12 @@ class _LabSamplesScreenState extends State<LabSamplesScreen> {
       }
     }
     if (widget.estadoAnalisis == 'ANALIZADO') {
-      return 'Muestras Analizadas';
+      return 'Historial de Muestras Analizadas';
     }
     return 'Muestras Pendientes de Análisis';
   }
+
+  bool get _isHistoryView => widget.estadoAnalisis == 'ANALIZADO';
 
   Color _getTipoColor(String codigo) {
     switch (codigo) {
@@ -82,6 +113,45 @@ class _LabSamplesScreenState extends State<LabSamplesScreen> {
     }
   }
 
+  Future<void> _applyFilters() async {
+    context.read<LabProvider>().loadSamples(
+      estadoAnalisis: widget.estadoAnalisis,
+      tipoAnalisisCodigo: _selectedTipoAnalisisCodigo,
+      fuenteId: _selectedFuenteId,
+      fechaDesde: _fechaDesde?.toIso8601String().split('T').first,
+      fechaHasta: _fechaHasta?.toIso8601String().split('T').first,
+    );
+    if (mounted) Navigator.pop(context);
+  }
+
+  Future<void> _clearFilters() async {
+    setState(() {
+      _fechaDesde = null;
+      _fechaHasta = null;
+      _selectedTipoAnalisisCodigo = null;
+      _selectedFuenteId = null;
+    });
+    await _applyFilters();
+  }
+
+  Future<void> _pickDate(BuildContext context, bool isDesde) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isDesde ? (_fechaDesde ?? DateTime.now()) : (_fechaHasta ?? DateTime.now()),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        if (isDesde) {
+          _fechaDesde = picked;
+        } else {
+          _fechaHasta = picked;
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<LabProvider>();
@@ -93,12 +163,22 @@ class _LabSamplesScreenState extends State<LabSamplesScreen> {
       appBar: AppBar(
         title: Text(_getTitle()),
         actions: [
+          if (_isHistoryView) ...[
+            IconButton(
+              icon: const Icon(Icons.filter_list),
+              onPressed: _showFilterDialog,
+              tooltip: 'Filtros',
+            ),
+            if (_hasActiveFilters())
+              IconButton(
+                icon: const Icon(Icons.clear_all),
+                onPressed: _clearFilters,
+                tooltip: 'Limpiar filtros',
+              ),
+          ],
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => context.read<LabProvider>().loadSamples(
-              estadoAnalisis: widget.estadoAnalisis,
-              tipoAnalisisCodigo: widget.tipoAnalisisCodigo,
-            ),
+            onPressed: () => _reloadSamples(),
             tooltip: 'Actualizar',
           ),
         ],
@@ -119,10 +199,7 @@ class _LabSamplesScreenState extends State<LabSamplesScreen> {
                       Text(error!),
                       const SizedBox(height: 16),
                       FilledButton(
-                        onPressed: () => context.read<LabProvider>().loadSamples(
-                          estadoAnalisis: widget.estadoAnalisis,
-                          tipoAnalisisCodigo: widget.tipoAnalisisCodigo,
-                        ),
+                        onPressed: _reloadSamples,
                         child: const Text('Reintentar'),
                       ),
                     ],
@@ -152,10 +229,7 @@ class _LabSamplesScreenState extends State<LabSamplesScreen> {
                       ),
                     )
                   : RefreshIndicator(
-                      onRefresh: () => context.read<LabProvider>().loadSamples(
-                        estadoAnalisis: widget.estadoAnalisis,
-                        tipoAnalisisCodigo: widget.tipoAnalisisCodigo,
-                      ),
+                      onRefresh: _reloadSamples,
                       child: ListView.separated(
                         itemCount: samples.length,
                         separatorBuilder: (_, __) => const Divider(height: 1),
@@ -168,6 +242,110 @@ class _LabSamplesScreenState extends State<LabSamplesScreen> {
                         },
                       ),
                     ),
+    );
+  }
+
+  void _reloadSamples() {
+    context.read<LabProvider>().loadSamples(
+      estadoAnalisis: widget.estadoAnalisis,
+      tipoAnalisisCodigo: _selectedTipoAnalisisCodigo ?? widget.tipoAnalisisCodigo,
+      fuenteId: _selectedFuenteId,
+      fechaDesde: _fechaDesde?.toIso8601String().split('T').first,
+      fechaHasta: _fechaHasta?.toIso8601String().split('T').first,
+    );
+  }
+
+  bool _hasActiveFilters() {
+    return _fechaDesde != null ||
+        _fechaHasta != null ||
+        _selectedTipoAnalisisCodigo != null ||
+        _selectedFuenteId != null;
+  }
+
+  void _showFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Filtros de Historial'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Fecha desde
+                ListTile(
+                  leading: const Icon(Icons.calendar_today),
+                  title: Text(_fechaDesde != null
+                      ? 'Desde: ${_fechaDesde!.day}/${_fechaDesde!.month}/${_fechaDesde!.year}'
+                      : 'Fecha desde'),
+                  onTap: () => _pickDate(context, true).then((_) => setDialogState(() {})),
+                ),
+                // Fecha hasta
+                ListTile(
+                  leading: const Icon(Icons.calendar_today),
+                  title: Text(_fechaHasta != null
+                      ? 'Hasta: ${_fechaHasta!.day}/${_fechaHasta!.month}/${_fechaHasta!.year}'
+                      : 'Fecha hasta'),
+                  onTap: () => _pickDate(context, false).then((_) => setDialogState(() {})),
+                ),
+                const Divider(),
+                // Tipo de análisis
+                DropdownButtonFormField<String>(
+                  value: _selectedTipoAnalisisCodigo,
+                  decoration: const InputDecoration(
+                    labelText: 'Tipo de análisis',
+                    prefixIcon: Icon(Icons.science),
+                  ),
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text('Todos')),
+                    ..._tiposAnalisis.map((t) => DropdownMenuItem(
+                          value: t.codigo,
+                          child: Text('${t.codigo} - ${t.nombre}'),
+                        )),
+                  ],
+                  onChanged: (value) => setDialogState(() => _selectedTipoAnalisisCodigo = value),
+                ),
+                const SizedBox(height: 16),
+                // Fuente
+                DropdownButtonFormField<String>(
+                  value: _selectedFuenteId,
+                  decoration: const InputDecoration(
+                    labelText: 'Fuente de agua',
+                    prefixIcon: Icon(Icons.water_drop),
+                  ),
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text('Todas')),
+                    ..._fuentes.map((f) => DropdownMenuItem(
+                          value: f.id,
+                          child: Text('${f.nombre} (${f.tipo})'),
+                        )),
+                  ],
+                  onChanged: (value) => setDialogState(() => _selectedFuenteId = value),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            if (_hasActiveFilters())
+              TextButton(
+                onPressed: () {
+                  _clearFilters();
+                  Navigator.pop(context);
+                },
+                child: const Text('Limpiar'),
+              ),
+            FilledButton(
+              onPressed: _applyFilters,
+              child: const Text('Aplicar'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -299,10 +477,7 @@ class _LabSamplesScreenState extends State<LabSamplesScreen> {
       ),
     ).then((_) {
       // Refresh on return
-      context.read<LabProvider>().loadSamples(
-        estadoAnalisis: widget.estadoAnalisis,
-        tipoAnalisisCodigo: widget.tipoAnalisisCodigo,
-      );
+      _reloadSamples();
     });
   }
 }
